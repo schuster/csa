@@ -1,7 +1,7 @@
 #lang racket
 
 (provide
- #%module-begin
+ (rename-out [my-module-begin #%module-begin])
  #%datum
  #%app
  #%top
@@ -75,6 +75,9 @@
                           (lambda (x)
                             (define transition-thunk (begin body ...))
                             (transition-thunk))))))
+
+(define-syntax-rule (my-module-begin body ...)
+  (#%module-begin body ... (sync never-evt)))
 
 (define-syntax (spawn-agent stx)
   (syntax-parse stx
