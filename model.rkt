@@ -24,7 +24,7 @@
      [unobs -> (s-hat e-hat ...) (activ π ...)]
      [unobs -> (s-hat e-hat ...)])
   (o [e-hat po])
-  (π [f d (s-hat e-hat ...)])
+  (π [σ d (s-hat e-hat ...)])
   (e-hat c-hat)
   (pi *
       (V pi ...)
