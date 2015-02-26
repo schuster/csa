@@ -17,6 +17,7 @@
  timeout
  send
  spawn-agent
+ spawn-named-agent
  goto
  goto-this-state
  define-variant-type
@@ -86,6 +87,13 @@
                    (current-state-thunk #f)
                    (let ([transition-thunk init])
                      (transition-thunk))))
+         body ...)]))
+
+(define-syntax (spawn-named-agent stx)
+  (syntax-parse stx
+    [(_ (channel:id ...) (agent:id arg ...) body ...)
+     #'(let ()
+         (match-define (list channel ...) (agent arg ...))
          body ...)]))
 
 ;; (define-keywords (func-name ...) keyword ...) defines each keyword as syntax that can only be used
