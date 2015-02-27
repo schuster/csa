@@ -135,11 +135,16 @@
       (SynSent [to-recvr (ChannelOf SenderMessage)]
                [port Nat]
                [status (ChannelOf Status)])
+      ;; NOTE: we use goto-this-state as an obvious shorthand
+      [write (m) (goto-this-state)]
+      [queued-message (m) (goto-this-state)]
+      [close (m) (goto-this-state)]
       [from-recvr (m)
         (case m
           [SynAck ()
             (send status (Connected write close))
             (goto Ready (Seq0) to-recvr port status)]
+          ;; NOTE: we use goto-this-state as an obvious shorthand
           [Ack1 () (goto-this-state)]
           [Ack0 () (goto-this-state)]
           [FinAck () (goto-this-state)])]
@@ -208,6 +213,7 @@
       [write (r)
         (send r (WriteFailed))
         (goto Closing status)]
+      [queued-message (m) (goto-this-state)]
       [close (c)
         ;; just ignore this
         (goto-this-state)]
@@ -227,8 +233,10 @@
       [write (r)
         (send r (WriteFailed))
         (goto-this-state)]
+      [queued-message (m) (goto-this-state)]
       [close (c)
-        (goto-this-state)])
+        (goto-this-state)]
+      [from-recvr (m) (goto-this-state)])
 
     (begin
       (send to-recvr (Syn receiver-port from-recvr))
@@ -266,6 +274,10 @@
                                       [remaining EntryList]
                                       [to-app (ChannelOf AppMessage)]
                                       [receivers EntryList])
+      ;; NOTE: we just throw away message in this state, because of the lack of selective
+      ;; receive. There are more better, more sophisticated ways to handle this
+      [connect (m) (goto-this-state)]
+      [from-net (m) (goto-this-state)]
       [(timeout 0)
         (case remaining
           [Null () (goto Ready to-app receivers)]
