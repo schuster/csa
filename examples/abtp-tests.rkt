@@ -1,6 +1,6 @@
 #lang racket
 
-(require "alternating-bit-transport-protocol.rkt")
+(require "abtp.rkt")
 (require rackunit)
 (require asyncunit)
 (require racket/async-channel)
