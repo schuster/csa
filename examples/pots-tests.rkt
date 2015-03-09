@@ -105,7 +105,8 @@
 
    (define peer-chan (make-async-channel))
    (async-channel-put result-chan2 (Valid peer-chan))
-   (check-unicast-match peer-chan (list 'Seize _))) ; TODO: fix this one
+   (define seize-response-chan (check-unicast-match peer-chan (list 'Seize r) #:result r))
+   (check-equal? seize-response-chan from-peer))
 
   (test-case
    "Getting a Seized response causes a Ring tone"
