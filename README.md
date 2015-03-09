@@ -22,7 +22,8 @@ File walk-through
 The examples directory has the implementations for examples from the paper. Each
 program has its implementation, written in "#lang csa", and a small test suite,
 written in Racket in a corresponding "-tests.rkt" file. Run each test file with
-"racket <program>-tests.rkt".
+"racket <program>-tests.rkt", or run all tests at once with "racket
+x-all-tests.rkt".
 
 A simple "hello world" program is also included, which can be run as "racket
 hello-world.rkt".
