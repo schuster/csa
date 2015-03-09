@@ -1,5 +1,5 @@
 #lang racket
 
 (require "switch-tests.rkt"
-         "pots-tests.rkt"
+         (submod "pots-tests.rkt" main)
          "abtp-tests.rkt")
