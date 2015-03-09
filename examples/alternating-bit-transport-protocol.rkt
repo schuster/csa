@@ -82,9 +82,11 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Actors
 
+;; The receiving side of an ABTP session
 (define (Receiver to-sender to-app)
   (spawn-agent
    (([from-sender SenderMessage])
+    ;; Waiting for a Seq0 message
     (define-state (Respond0 [to-sender (ChannelOf ReceiverMessage)]
                             ;; should be AppMessage
                             [to-app (ChannelOf AppMessage)])
@@ -105,6 +107,7 @@
        (send to-sender (Ack0))
        (goto Respond0 to-sender to-app)])
 
+    ;; Waiting for a Seq1 message
     (define-state (Respond1 [to-sender (ChannelOf ReceiverMessage)]
                             [to-app (ChannelOf Unit)])
       [from-sender (msg)
@@ -124,6 +127,7 @@
        (send to-sender (Ack1))
        (goto Respond1 to-sender to-app)])
 
+    ;; The session is closed; receiver will not acknowledge further messages
     (define-state (Closed)
       [from-sender (msg) (goto Closed)])
 
@@ -133,10 +137,12 @@
 
    (list from-sender)))
 
+;; The sending side of an ABTP session
 (define (Sender to-recvr receiver-port status)
   (spawn-agent
    (([write Unit] [close Unit] [from-recvr ReceiverMessage])
 
+    ;; Waiting for acknowledgment of the SYN
     (define-state
       (SynSent [to-recvr (ChannelOf SenderMessage)]
                [port Nat]
@@ -157,6 +163,7 @@
         (send status (ConnectFailed))
         (goto ClosedState)])
 
+    ;; Waiting for the application to request messages to write on the session
     (define-state (Ready [current-seq SequenceNumber]
                          [to-recvr (ChannelOf SenderMessage)]
                          [port Nat]
@@ -172,6 +179,7 @@
         ;; can ignore all receiver messages in this state
         (goto Ready current-seq to-recvr port status)])
 
+    ;; Awaiting an acknowledgment from the receiver for a session message
     (define-state (AwaitingAck [last-sent-seq SequenceNumber]
                                [send-attempts AttemptCount]
                                ;; these two stacks implement a queue in the purely functional style
@@ -221,13 +229,15 @@
           (send status (ErrorClosed))
           (goto ClosedState)])])
 
-    ;; TODO: maybe rename this to "Rebalancing"
+    ;; The state in which we do the rebalancing of the enqueue and dequeue stacks to implement the
+    ;; purely functional queue (happens after receving an ACK). When the rebalancing is done, we
+    ;; either send the next thing in the queue or go back to Ready if the queue is empty.
     (define-state (Rebalancing [current-seq SequenceNumber]
-                              [enqueue-stack MessageStack]
-                              [dequeue-stack MessageStack]
-                              [to-recvr (ChannelOf SenderMessage)]
-                              [port Nat]
-                              [status (ChannelOf Status)])
+                               [enqueue-stack MessageStack]
+                               [dequeue-stack MessageStack]
+                               [to-recvr (ChannelOf SenderMessage)]
+                               [port Nat]
+                               [status (ChannelOf Status)])
       [(timeout 0)
         (case enqueue-stack
           [EmptyStack ()
@@ -252,6 +262,8 @@
         ;; can ignore all receiver messages in this state
         (goto-this-state)])
 
+    ;; Waiting for a FIN/ACK from the receiver. If not received in time, will close with an error
+    ;; status message instead.
     (define-state (Closing [status (ChannelOf Status)])
       [write (r)
         (send r (WriteFailed))
@@ -271,6 +283,7 @@
         (send status (ErrorClosed))
         (goto ClosedState)])
 
+    ;; The final state for the session - no further commands or receiver messages are accepted.
     (define-state (ClosedState)
       [write (r)
         (send r (WriteFailed))
@@ -284,10 +297,12 @@
       (goto SynSent to-recvr receiver-port status)))
    (list write close from-recvr)))
 
+;; Manages a collection of senders and receivers
 (define (Manager to-app nic-registration)
   (spawn-agent
    (([connect Connect] [from-net SenderMessage])
 
+    ;; Ready to accept commands or network messages
     (define-state (Ready [to-app (ChannelOf AppMessage)]
                          [receivers EntryList])
       [connect (req)
@@ -310,6 +325,7 @@
           [Fin (port)
             (goto LookingForReceiver m port receivers to-app receivers)])])
 
+    ;; The state in which we examine the receiver list one at a time to match a given port number
     (define-state (LookingForReceiver [message SenderMessage]
                                       [port Nat]
                                       [remaining EntryList]
