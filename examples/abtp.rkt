@@ -1,5 +1,3 @@
-;; TODO: put purpose statements on components and states
-
 #lang csa
 
 ;; Implements actors and specifications for a variant of the alternating bit protocol, with a two-way
@@ -86,6 +84,11 @@
 (define (Receiver to-sender to-app)
   (spawn-agent
    (([from-sender SenderMessage])
+
+    (begin
+      (send to-sender (SynAck))
+      (goto Respond1 to-sender to-app))
+
     ;; Waiting for a Seq0 message
     (define-state (Respond0 [to-sender (ChannelOf ReceiverMessage)]
                             ;; should be AppMessage
@@ -129,11 +132,7 @@
 
     ;; The session is closed; receiver will not acknowledge further messages
     (define-state (Closed)
-      [from-sender (msg) (goto Closed)])
-
-    (begin
-      (send to-sender (SynAck))
-      (goto Respond1 to-sender to-app)))
+      [from-sender (msg) (goto Closed)]))
 
    (list from-sender)))
 
@@ -141,6 +140,10 @@
 (define (Sender to-recvr receiver-port status)
   (spawn-agent
    (([write Unit] [close Unit] [from-recvr ReceiverMessage])
+
+    (begin
+      (send to-recvr (Syn receiver-port from-recvr))
+      (goto SynSent to-recvr receiver-port status))
 
     ;; Waiting for acknowledgment of the SYN
     (define-state
@@ -290,17 +293,18 @@
         (goto-this-state)]
       [close (c)
         (goto-this-state)]
-      [from-recvr (m) (goto-this-state)])
+      [from-recvr (m) (goto-this-state)]))
 
-    (begin
-      (send to-recvr (Syn receiver-port from-recvr))
-      (goto SynSent to-recvr receiver-port status)))
    (list write close from-recvr)))
 
 ;; Manages a collection of senders and receivers
 (define (Manager to-app nic-registration)
   (spawn-agent
    (([connect Connect] [from-net SenderMessage])
+
+    (begin
+      (send nic-registration from-net)
+      (goto Ready to-app (Null)))
 
     ;; Ready to accept commands or network messages
     (define-state (Ready [to-app (ChannelOf AppMessage)]
@@ -345,11 +349,7 @@
                  [True ()
                   (send chan message)
                   (goto Ready to-app receivers)]
-                 [False () (goto LookingForReceiver message rest to-app receivers)])])])])
-
-    (begin
-      (send nic-registration from-net)
-      (goto Ready to-app (Null))))
+                 [False () (goto LookingForReceiver message rest to-app receivers)])])])]))
 
    (list connect from-net)))
 

@@ -94,6 +94,8 @@
   (spawn-agent
    (([hw-event HardwareEvent] [from-peer PeerMessage] [analysis-result AnalysisResult])
 
+    (goto Idle lim analyzer)
+
     (define-state (Idle [lim (ChannelOf LimCommand)] [analyzer (ChannelOf AnalysisRequest)])
       [hw-event (e)
         (case e
@@ -305,8 +307,6 @@
           [Rejected () (goto WaitOnHook lim analyzer have-tone?)]
           [Cleared ()  (goto WaitOnHook lim analyzer have-tone?)]
           [Answered () (goto WaitOnHook lim analyzer have-tone?)])]
-      [analysis-result (r) (goto WaitOnHook lim analyzer have-tone?)])
-
-    (goto Idle lim analyzer))
+      [analysis-result (r) (goto WaitOnHook lim analyzer have-tone?)]))
 
    (list hw-event from-peer analysis-result)))

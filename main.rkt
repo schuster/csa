@@ -79,7 +79,7 @@
 
 (define-syntax (spawn-agent stx)
   (syntax-parse stx
-    [(_ (([chan:id chan-type:type] ...) state-def:state-definition ... init) body ...)
+    [(_ (([chan:id chan-type:type] ...) init state-def:state-definition ...) body ...)
      #'(let ()
          (define chan (make-async-channel)) ...
          (thread (lambda ()

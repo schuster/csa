@@ -9,6 +9,7 @@
    (([in Nat]
      [toggle Unit]
      [new-out (ChannelOf Nat)])
+    (goto On out)
     (define-state (Off [out (ChannelOf Nat)])
       [in (m) (goto Off out)]
       [toggle (u) (goto On out)]
@@ -18,8 +19,7 @@
         (send out m)
         (goto On out)]
       [toggle (u) (goto Off out)]
-      [new-out (c) (goto On c)])
-    (goto On out))
+      [new-out (c) (goto On c)]))
    (list in toggle new-out)))
 
 ;; ---------------------------------------------------------------------------------------------------
