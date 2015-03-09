@@ -11,10 +11,9 @@
 (define (make-sender)
   (define receiver-channel (make-async-channel))
   (define status-channel (make-async-channel))
-  (match-define (list message-to-send queued-message close-session from-receiver)
+  (match-define (list message-to-send close-session from-receiver)
     (Sender receiver-channel 80 status-channel))
   (values message-to-send
-          queued-message
           close-session
           from-receiver
           receiver-channel
@@ -26,14 +25,14 @@
 
 (test-case
  "Initial connection time-out"
- (match-define-values (_ _ _ _ _ status-channel) (make-sender))
+ (match-define-values (_ _ _ _ status-channel) (make-sender))
  (sleep 3)
  (check-unicast status-channel (ConnectFailed)))
 
 (test-case
  "Initial connection success"
 
- (match-define-values (_ _ _ from-receiver _ status-channel) (make-sender))
+ (match-define-values (_ _ from-receiver _ status-channel) (make-sender))
  (async-channel-put from-receiver (SynAck))
  (check-unicast-match status-channel (list 'Connected _ _))
  ;; void here just prevents output when running the test
@@ -41,7 +40,7 @@
 
 (test-case
  "Timeout on message send, with multiples sent"
- (match-define-values (message-to-send _ _ from-receiver to-receiver status-channel)
+ (match-define-values (message-to-send _ from-receiver to-receiver status-channel)
    (make-sender))
  (goto-Connected from-receiver status-channel)
  (define req-response (make-async-channel))

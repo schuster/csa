@@ -1,3 +1,5 @@
+;; TODO: put purpose statements on components and states
+
 #lang csa
 
 ;; Implements actors and specifications for a variant of the alternating bit protocol, with a two-way
@@ -73,6 +75,10 @@
   [Entry Natural ; port
          (Channel SenderMessage)])
 
+(define-variant-type MessageStack
+  [EmptyStack]
+  [Stack MessageStack]) ; note: we currently omit the message for simplicity
+
 ;; ---------------------------------------------------------------------------------------------------
 ;; Actors
 
@@ -129,7 +135,7 @@
 
 (define (Sender to-recvr receiver-port status)
   (spawn-agent
-   (([write Unit] [queued-message Unit] [close Unit] [from-recvr ReceiverMessage])
+   (([write Unit] [close Unit] [from-recvr ReceiverMessage])
 
     (define-state
       (SynSent [to-recvr (ChannelOf SenderMessage)]
@@ -137,7 +143,6 @@
                [status (ChannelOf Status)])
       ;; NOTE: we use goto-this-state as an obvious shorthand
       [write (m) (goto-this-state)]
-      [queued-message (m) (goto-this-state)]
       [close (m) (goto-this-state)]
       [from-recvr (m)
         (case m
@@ -157,12 +162,9 @@
                          [port Nat]
                          [status (ChannelOf Status)])
       [write (response)
-        (send queued-message (Unit))
+        (send to-recvr (Message port current-seq (Unit)))
         (send response (Queued))
-        (goto Ready current-seq to-recvr port status)]
-      [queued-message (m)
-        (send to-recvr (Message port current-seq m))
-        (goto AwaitingAck current-seq m (OneAttempt) to-recvr port status)]
+        (goto AwaitingAck current-seq (OneAttempt) (EmptyStack) (EmptyStack) to-recvr port status)]
       [close (c)
         (send to-recvr (Fin port))
         (goto Closing status)]
@@ -171,18 +173,18 @@
         (goto Ready current-seq to-recvr port status)])
 
     (define-state (AwaitingAck [last-sent-seq SequenceNumber]
-                               [message Unit]
                                [send-attempts AttemptCount]
+                               ;; these two stacks implement a queue in the purely functional style
+                               [enqueue-stack MessageStack]
+                               [dequeue-stack MessageStack]
                                [to-recvr (ChannelOf SenderMessage)]
                                [port Nat]
                                [status (ChannelOf Status)])
       [write (r)
-        (send queued-message (Unit))
         (send r (Queued))
-        (goto-this-state)]
+        (goto AwaitingAck last-sent-seq send-attempts (Stack enqueue-stack) dequeue-stack to-recvr port status)]
       [close (c)
         (send to-recvr (Fin port))
-        ;; BUG: forgot to add arguments to the Closing state here
         (goto Closing status)]
       [from-recvr (m)
         (case m
@@ -190,30 +192,70 @@
           [Ack1 ()
             (case last-sent-seq
               [Seq0 () (goto-this-state)]
-              [Seq1 () (goto Ready (Seq0) to-recvr port status)])]
+              [Seq1 ()
+                ;; check for any queued messages to send
+                (case dequeue-stack
+                  [EmptyStack () (goto Dequeueing (Seq0) enqueue-stack dequeue-stack to-recvr port status)]
+                  [Stack (dequeue-stack)
+                    (send to-recvr (Message port (Seq0) (Unit)))
+                    (goto AwaitingAck (Seq0) (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])])]
           [Ack0 ()
             (case last-sent-seq
-              ;; BUG: Seq0 in the args to Ready should really be Seq1
-              [Seq0 () (goto Ready (Seq0) to-recvr port status)]
+              [Seq0 ()
+                (case dequeue-stack
+                  [EmptyStack () (goto Dequeueing (Seq1) enqueue-stack dequeue-stack to-recvr port status)]
+                  [Stack (dequeue-stack)
+                    (send to-recvr (Message port (Seq1) (Unit)))
+                    (goto AwaitingAck (Seq1) (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])]
               [Seq1 () (goto-this-state)])]
           [FinAck () (goto-this-state)])]
       [(timeout 3)
        (case send-attempts
          [OneAttempt ()
-           (send to-recvr (Message port last-sent-seq message))
-           (goto AwaitingAck last-sent-seq message (TwoAttempts) to-recvr port status)]
+           (send to-recvr (Message port last-sent-seq (Unit)))
+           (goto AwaitingAck last-sent-seq (TwoAttempts) enqueue-stack dequeue-stack to-recvr port status)]
          [TwoAttempts ()
-           (send to-recvr (Message port last-sent-seq message))
-           (goto AwaitingAck last-sent-seq message (ThreeAttempts) to-recvr port status)]
+           (send to-recvr (Message port last-sent-seq (Unit)))
+           (goto AwaitingAck last-sent-seq (ThreeAttempts) enqueue-stack dequeue-stack to-recvr port status)]
          [ThreeAttempts ()
           (send status (ErrorClosed))
           (goto ClosedState)])])
+
+    ;; TODO: maybe rename this to "Rebalancing"
+    (define-state (Dequeueing [current-seq SequenceNumber]
+                              [enqueue-stack MessageStack]
+                              [dequeue-stack MessageStack]
+                              [to-recvr (ChannelOf SenderMessage)]
+                              [port Nat]
+                              [status (ChannelOf Status)])
+      [(timeout 0)
+        (case enqueue-stack
+          [EmptyStack ()
+            (case dequeue-stack
+              [EmptyStack () (goto Ready current-seq to-recvr port status)]
+              [Stack (dequeue-stack)
+                (send to-recvr (Message port current-seq (Unit)))
+                (goto AwaitingAck current-seq (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])]
+          [Stack (enqueue-stack)
+            (goto Dequeueing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)])]
+      [write (r)
+        (send r (Queued))
+        ;; NOTE: we enqueue the message into the middle of the stack, because we don't have a better
+        ;; choice. The lack of recursion means we can't rebalance the entire queue all at once without
+        ;; listening to other channels, and because we have no selective receive, we have to listen to
+        ;; this channel.
+        (goto Dequeueing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)]
+      [close (c)
+        (send to-recvr (Fin port))
+        (goto Closing status)]
+      [from-recvr (m)
+        ;; can ignore all receiver messages in this state
+        (goto-this-state)])
 
     (define-state (Closing [status (ChannelOf Status)])
       [write (r)
         (send r (WriteFailed))
         (goto Closing status)]
-      [queued-message (m) (goto-this-state)]
       [close (c)
         ;; just ignore this
         (goto-this-state)]
@@ -233,7 +275,6 @@
       [write (r)
         (send r (WriteFailed))
         (goto-this-state)]
-      [queued-message (m) (goto-this-state)]
       [close (c)
         (goto-this-state)]
       [from-recvr (m) (goto-this-state)])
@@ -241,7 +282,7 @@
     (begin
       (send to-recvr (Syn receiver-port from-recvr))
       (goto SynSent to-recvr receiver-port status)))
-   (list write queued-message close from-recvr)))
+   (list write close from-recvr)))
 
 (define (Manager to-app nic-registration)
   (spawn-agent
@@ -255,7 +296,7 @@
             ;; We use spawn-named-agent as a small hack to allow separate definition of agents; this
             ;; is effectively equivalent to copy-pasting the the Sender code here into a spawn-agent
             ;; form
-            (spawn-named-agent (write queued-message close from-recvr)
+            (spawn-named-agent (write close from-recvr)
               (Sender to-recvr port status)
               (goto-this-state))])]
       [from-net (m)
