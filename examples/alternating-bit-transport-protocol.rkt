@@ -195,7 +195,7 @@
               [Seq1 ()
                 ;; check for any queued messages to send
                 (case dequeue-stack
-                  [EmptyStack () (goto Dequeueing (Seq0) enqueue-stack dequeue-stack to-recvr port status)]
+                  [EmptyStack () (goto Rebalancing (Seq0) enqueue-stack dequeue-stack to-recvr port status)]
                   [Stack (dequeue-stack)
                     (send to-recvr (Message port (Seq0) (Unit)))
                     (goto AwaitingAck (Seq0) (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])])]
@@ -203,7 +203,7 @@
             (case last-sent-seq
               [Seq0 ()
                 (case dequeue-stack
-                  [EmptyStack () (goto Dequeueing (Seq1) enqueue-stack dequeue-stack to-recvr port status)]
+                  [EmptyStack () (goto Rebalancing (Seq1) enqueue-stack dequeue-stack to-recvr port status)]
                   [Stack (dequeue-stack)
                     (send to-recvr (Message port (Seq1) (Unit)))
                     (goto AwaitingAck (Seq1) (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])]
@@ -222,7 +222,7 @@
           (goto ClosedState)])])
 
     ;; TODO: maybe rename this to "Rebalancing"
-    (define-state (Dequeueing [current-seq SequenceNumber]
+    (define-state (Rebalancing [current-seq SequenceNumber]
                               [enqueue-stack MessageStack]
                               [dequeue-stack MessageStack]
                               [to-recvr (ChannelOf SenderMessage)]
@@ -237,14 +237,14 @@
                 (send to-recvr (Message port current-seq (Unit)))
                 (goto AwaitingAck current-seq (OneAttempt) enqueue-stack dequeue-stack to-recvr port status)])]
           [Stack (enqueue-stack)
-            (goto Dequeueing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)])]
+            (goto Rebalancing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)])]
       [write (r)
         (send r (Queued))
         ;; NOTE: we enqueue the message into the middle of the stack, because we don't have a better
         ;; choice. The lack of recursion means we can't rebalance the entire queue all at once without
         ;; listening to other channels, and because we have no selective receive, we have to listen to
         ;; this channel.
-        (goto Dequeueing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)]
+        (goto Rebalancing current-seq enqueue-stack (Stack dequeue-stack) to-recvr port status)]
       [close (c)
         (send to-recvr (Fin port))
         (goto Closing status)]
