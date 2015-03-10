@@ -139,7 +139,9 @@
 ;; The sending side of an ABTP session
 (define (Sender to-recvr receiver-port status)
   (spawn-agent
-   (([write Unit] [close Unit] [from-recvr ReceiverMessage])
+   (([write (ChannelOf WriteResponse)]
+     [close Unit]
+     [from-recvr ReceiverMessage])
 
     (begin
       (send to-recvr (Syn receiver-port from-recvr))
@@ -147,8 +149,8 @@
 
     ;; Waiting for acknowledgment of the SYN
     (define-state
-      (SynSent [to-recvr (ChannelOf SenderMessage)]
-               [port Nat]
+      (SynSent [recvr (ChannelOf SenderMessage)]
+               [p Nat]
                [status (ChannelOf Status)])
       ;; NOTE: we use goto-this-state as an obvious shorthand
       [write (m) (goto-this-state)]
@@ -157,11 +159,11 @@
         (case m
           [SynAck ()
             (send status (Connected write close))
-            (goto Ready (Seq0) to-recvr port status)]
+            (goto Ready (Seq0) recvr p status)]
           ;; NOTE: we use goto-this-state as an obvious shorthand
-          [Ack1 () (goto-this-state)]
-          [Ack0 () (goto-this-state)]
-          [FinAck () (goto-this-state)])]
+          [Ack1 () (goto SynSent recvr p status)]
+          [Ack0 () (goto SynSent recvr p status)]
+          [FinAck () (goto SynSent recvr p status)])]
       [(timeout 3)
         (send status (ConnectFailed))
         (goto ClosedState)])
