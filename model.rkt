@@ -28,7 +28,7 @@
      (list p ...))
   (b + - < =)
   ((x c s) variable-not-otherwise-mentioned)
-  (y symbol)
+  (y (quote variable-not-otherwise-mentioned))
   (n natural))
 
 (define-language aps
@@ -57,7 +57,7 @@
       (list po ...)
       (spec-chan σ c-hat)
       (spec-chan self c-hat))
-  (y symbol)
+  (y (quote variable-not-otherwise-mentioned))
 
   ;; Names
   (d variable-not-otherwise-mentioned)

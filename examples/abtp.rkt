@@ -265,32 +265,30 @@
 ;; Defines the behavior of the ABTP manager, from the consumer's point of view
 (define-spec ManagerSpec (connect)
   (define-state (Always)
-    ;; [connect (Connect * * status) ->
-    ;;   (Always)
-    ;;   (activ [s SenderSpec (Connecting status)])]
-    )
-  )
+    [connect (list 'Connect * * status) ->
+             (Always)
+             (activ [s SenderSpec (Connecting status)])]))
 
 ;; Defines the behavior of an ABTP sender, from the point of view of the application layer
-;; (define-spec SenderSpec (write close)
-;;   (define-state (Connecting status)
-;;     [unobs ->
-;;       (Closed) (out [status (ConnectFailed)])]
-;;     [unobs ->
-;;       (Connected status)
-;;       (out
-;;        [status
-;;         (Connected (spec-chan self write)
-;;                    (spec-chan self close))])])
-;;   (define-state (Connected status)
-;;     [unobs -> (Closed) (out [status (ErrorClosed)])]
-;;     [write r -> (Connected status) (out [r (Queued)])]
-;;     [close * -> (Closing status)])
-;;   (define-state (Closing status)
-;;     [write r -> (Closing status) (out [r (WriteFailed)])]
-;;     [close * -> (Closing status)]
-;;     [unobs -> (Closed) (out [status (ErrorClosed)])]
-;;     [unobs -> (Closed) (out [status (Closed)])])
-;;   (define-state (Closed)
-;;     [write r -> (Closed) (out [r (WriteFailed)])]
-;;     [close * -> (Closed)]))
+(define-spec SenderSpec (write close)
+  (define-state (Connecting status)
+    [unobs ->
+      (Closed) (out [status 'ConnectFailed])]
+    [unobs ->
+      (Connected status)
+      (out
+       [status
+        (list 'Connected (spec-chan self write)
+                         (spec-chan self close))])])
+  (define-state (Connected status)
+    [unobs -> (Closed) (out [status 'ErrorClosed])]
+    [write r -> (Connected status) (out [r 'Queued])]
+    [close * -> (Closing status)])
+  (define-state (Closing status)
+    [write r -> (Closing status) (out [r 'WriteFailed])]
+    [close * -> (Closing status)]
+    [unobs -> (Closed) (out [status 'ErrorClosed])]
+    [unobs -> (Closed) (out [status 'Closed])])
+  (define-state (Closed)
+    [write r -> (Closed) (out [r 'WriteFailed])]
+    [close * -> (Closed)]))
