@@ -262,14 +262,14 @@
 ;; Specifications
 
 ;; Defines the behavior of the ABTP manager, from the consumer's point of view
-(define-spec ManagerSpec (connect)
+(define-spec (ManagerSpec connect)
   (define-state (Always)
     [connect (list 'Connect * * status) ->
              (Always)
              (activ [s SenderSpec (Connecting status)])]))
 
 ;; Defines the behavior of an ABTP sender, from the point of view of the application layer
-(define-spec SenderSpec (write close)
+(define-spec (SenderSpec write close)
   (define-state (Connecting status)
     [unobs ->
       (Closed) (out [status 'ConnectFailed])]

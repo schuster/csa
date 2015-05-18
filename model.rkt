@@ -32,7 +32,7 @@
   (n natural))
 
 (define-language aps
-  (D (define-spec d (c-hat ...)
+  (D (define-spec (d c-hat ...)
        (define-state (s-hat c-hat ...) R ...) ...))
   ;; differs from the paper; R is a state clause
   (R [c-hat pi -> (s-hat e-hat ...) (out o ...) (activ π ...)]
