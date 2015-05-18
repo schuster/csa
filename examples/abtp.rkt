@@ -74,7 +74,6 @@
 
     ;; Waiting for acknowledgment of the SYN
     (define-state (SynSent to-recvr port status)
-      ;; NOTE: we use goto-this-state as an obvious shorthand
       [write (m) (goto SynSent to-recvr port status)]
       [close (m) (goto SynSent to-recvr port status)]
       [from-recvr (m)
@@ -82,7 +81,6 @@
           ['SynAck
            (send status (list 'Connected write close))
            (goto Ready 'Seq0 to-recvr port status)]
-          ;; NOTE: we use goto-this-state as an obvious shorthand
           ['Ack1 (goto SynSent to-recvr port status)]
           ['Ack0 (goto SynSent to-recvr port status)]
           ['FinAck (goto SynSent to-recvr port status)])]
@@ -120,6 +118,7 @@
         (goto Closing status)]
       [from-recvr (m)
         (match m
+          ;; NOTE: we use goto-this-state as an obvious shorthand
           ['SynAck (goto-this-state)]
           ['Ack1
             (match last-sent-seq
