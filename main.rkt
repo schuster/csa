@@ -7,12 +7,14 @@
  #%top
  provide
  define ; only used to provide a constructor for tests
- list ; only used to provide constructor return value
+ quote
+ list
  begin
+ (rename-out [csa-match match])
  +
- -
- (contract-out (rename my= = (-> natural-number/c natural-number/c any/c))
-               (rename my< < (-> natural-number/c natural-number/c any/c)))
+ (rename-out [csa- -])
+ (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
+               (rename csa< < (-> natural-number/c natural-number/c any/c)))
  define-state
  timeout
  send
@@ -20,13 +22,6 @@
  spawn-named-agent
  goto
  goto-this-state
- define-variant-type
- case
-
- ;; type keywords
- Bool
- Nat
- ChannelOf
 
  ;; specifications
  define-spec
@@ -44,16 +39,9 @@
                      "model.rkt"))
 
 (begin-for-syntax
-  (define-syntax-class type
-   #:literals (Bool Nat ChannelOf)
-   (pattern Bool)
-   (pattern Nat)
-   (pattern name:id)
-   (pattern (ChannelOf t:type)))
-
   (define-syntax-class state-definition
    #:attributes (transition-func)
-   (pattern (define-state (name:id [formal:id formal-type:type] ...) handler:message-handler ...)
+   (pattern (define-state (name:id formal:id ...) handler:message-handler ...)
             #:attr transition-func
             #`(define (name formal ...)
                 (lambda ()
@@ -79,7 +67,7 @@
 
 (define-syntax (spawn-agent stx)
   (syntax-parse stx
-    [(_ (([chan:id chan-type:type] ...) init state-def:state-definition ...) body ...)
+    [(_ ((chan:id ...) init state-def:state-definition ...) body ...)
      #'(let ()
          (define chan (make-async-channel)) ...
          (thread (lambda ()
@@ -114,7 +102,6 @@
            (raise-syntax-error #f #,error-message stx)) ...)]))
 
 (define-keywords (spawn-agent define-spec) channels define-state)
-(define-keywords (spawn-agent define-variant-type) Bool Nat ChannelOf)
 (define-keywords define-state timeout)
 
 (define (send chan message)
@@ -130,26 +117,6 @@
   (current-state-thunk))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Variant types
-
-(define-syntax (define-variant-type stx)
-  (syntax-parse stx
-    [(_ name [variant-name arg-type ...] ...)
-     ;; TODO: figure out a better way to generate one fresh variable per arg-type
-     (with-syntax
-         ([((arg ...) ...)
-                    (map (lambda (arg-list) (map (lambda (arg) (gensym)) (syntax->list arg-list)))
-                         (syntax->list #'((arg-type ...) ...)))])
-       #'(begin
-           (define (variant-name arg ...) (list 'variant-name arg ...)) ...))]))
-
-(define-syntax (case stx)
-  (syntax-parse stx
-    [(_ t [variant-name (args ...) body ...] ...)
-     #'(match t
-         [(list 'variant-name args ...) body ...] ...)]))
-
-;; ---------------------------------------------------------------------------------------------------
 ;; Specifications
 
 (define-syntax (define-spec stx)
@@ -160,10 +127,28 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Natural number operations
 
-;; Returns the variant (True) or (False)
-(define (my= a b)
-  (if (= a b) (list 'True) (list 'False)))
+(define (csa= a b)
+  (if (= a b) 'True 'False))
 
-(define (my< a b)
-  (if (< a b) (list 'True) (list 'False)))
+(define (csa< a b)
+  (if (< a b) 'True 'False))
 
+(define (csa- a b)
+  (max 0 (- a b)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Pattern matching
+
+(begin-for-syntax
+  (define-syntax-class match-pattern
+    #:literals (list quote)
+    (pattern x:id)
+    (pattern (quote s:id))
+    (pattern (list p:match-pattern ...))))
+
+(define-syntax (csa-match stx)
+  (syntax-parse stx
+    [(_ e [pat:match-pattern body ...+] ...)
+     #'(match e
+         [pat body ...] ...
+         [_ (sync)])])) ; A match without a matching clause is a stuck state
