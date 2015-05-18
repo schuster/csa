@@ -64,13 +64,13 @@
    (list from-sender)))
 
 ;; The sending side of an ABTP session
-(define (Sender to-recvr receiver-port status)
+(define (Sender to-recvr port status)
   (spawn-agent
    ((write close from-recvr)
 
     (begin
-      (send to-recvr (list 'Syn receiver-port from-recvr))
-      (goto SynSent to-recvr receiver-port status))
+      (send to-recvr (list 'Syn port from-recvr))
+      (goto SynSent to-recvr port status))
 
     ;; Waiting for acknowledgment of the SYN
     (define-state (SynSent to-recvr port status)
