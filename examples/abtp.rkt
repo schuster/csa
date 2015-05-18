@@ -83,9 +83,9 @@
            (send status (list 'Connected write close))
            (goto Ready 'Seq0 to-recvr port status)]
           ;; NOTE: we use goto-this-state as an obvious shorthand
-          ['Ack1 (goto SynSent recvr p status)]
-          ['Ack0 (goto SynSent recvr p status)]
-          ['FinAck (goto SynSent recvr p status)])]
+          ['Ack1 (goto SynSent to-recvr port status)]
+          ['Ack0 (goto SynSent to-recvr port status)]
+          ['FinAck (goto SynSent to-recvr port status)])]
       [(timeout 3)
         (send status 'ConnectFailed)
         (goto ClosedState)])
