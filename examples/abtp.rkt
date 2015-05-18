@@ -75,8 +75,8 @@
     ;; Waiting for acknowledgment of the SYN
     (define-state (SynSent to-recvr port status)
       ;; NOTE: we use goto-this-state as an obvious shorthand
-      [write (m) (goto-this-state)]
-      [close (m) (goto-this-state)]
+      [write (m) (goto SynSent to-recvr port status)]
+      [close (m) (goto SynSent to-recvr port status)]
       [from-recvr (m)
         (match m
           ['SynAck
