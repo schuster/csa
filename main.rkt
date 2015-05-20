@@ -40,48 +40,57 @@
 
 (begin-for-syntax
   (define-syntax-class state-definition
-   #:attributes (transition-func)
-   (pattern (define-state (name:id formal:id ...) handler:message-handler ...)
-            #:attr transition-func
-            #`(define (name formal ...)
-                (lambda ()
-                  (define current-state-body (lambda () (sync/timeout #f handler.event ... never-evt)))
-                  (current-state-thunk current-state-body)
-                  (current-state-body)))))
-
- (define-syntax-class message-handler
-   #:literals (timeout)
-   #:attributes (event)
-   (pattern (channel:id (message-var:id) body ...)
-            #:attr event
-            #'(handle-evt channel
-                        (lambda (message-var)
-                          (define transition-thunk (begin body ...))
-                          (transition-thunk))))
-   (pattern ((timeout timeout-amount:nat) body ...)
-            #:attr event
-            #'(handle-evt (alarm-evt (+ (current-inexact-milliseconds) (* 1000 timeout-amount)))
-                          (lambda (x)
-                            (define transition-thunk (begin body ...))
-                            (transition-thunk))))))
+    #:literals (timeout)
+    ;; TODO: there's probably a way to get the scope for "channel" worked out without resorting to the
+    ;; run-time overhead of a function call, but I don't know enough about macros to figure that out
+    ;; yet
+    #:attributes (transition-func-generator)
+    (pattern (define-state (name:id formal:id ...)
+               body
+               (~optional [(timeout timeout-amount:nat) timeout-body ...]))
+             #:attr transition-func-generator
+             (lambda (chan)
+               (with-syntax ([message-var (datum->syntax #'body 'm)]
+                             [chan chan])
+                 #`(define (name formal ...)
+                     (define handler-event
+                       (handle-evt chan
+                                   (lambda (message-var)
+                                     (define transition-thunk body)
+                                     (transition-thunk))))
+                     (define timeout-event
+                       #,(if (not (attribute timeout-amount))
+                             #`never-evt
+                             #`(handle-evt (alarm-evt (+ (current-inexact-milliseconds) (* 1000 timeout-amount)))
+                                           (lambda (x)
+                                             (define transition-thunk (begin timeout-body ...))
+                                             (transition-thunk)))))
+                     (lambda ()
+                       (define current-state-body
+                         (lambda ()
+                           (sync/timeout #f handler-event timeout-event)))
+                       (current-state-thunk current-state-body)
+                       (current-state-body))))))))
 
 (define-syntax (spawn-agent stx)
   (syntax-parse stx
-    [(_ ((chan:id ...) init state-def:state-definition ...) body ...)
+    [(_ (chan:id init state-def:state-definition ...) body ...)
+     (with-syntax ([(state-def-function ...)
+                    (map (lambda (gen) (gen #'chan)) (attribute state-def.transition-func-generator))])
      #'(let ()
-         (define chan (make-async-channel)) ...
+         (define chan (make-async-channel))
          (thread (lambda ()
-                   state-def.transition-func ...
+                   state-def-function ...
                    (current-state-thunk #f)
                    (let ([transition-thunk init])
                      (transition-thunk))))
-         body ...)]))
+         body ...))]))
 
 (define-syntax (spawn-named-agent stx)
   (syntax-parse stx
-    [(_ (channel:id ...) (agent:id arg ...) body ...)
+    [(_ channel:id (agent:id arg ...) body ...)
      #'(let ()
-         (match-define (list channel ...) (agent arg ...))
+         (define channel (agent arg ...))
          body ...)]))
 
 ;; (define-keywords (func-name ...) keyword ...) defines each keyword as syntax that can only be used
@@ -101,7 +110,7 @@
          (define-syntax (keyword stx)
            (raise-syntax-error #f #,error-message stx)) ...)]))
 
-(define-keywords (spawn-agent define-spec) channels define-state)
+(define-keywords (spawn-agent define-spec) define-state)
 (define-keywords define-state timeout)
 
 (define (send chan message)
