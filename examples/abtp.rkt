@@ -13,7 +13,7 @@
 ;; The receiving side of an ABTP session
 (define (Receiver to-sender to-app)
   (spawn-agent
-   (self
+   (receiver
 
     (begin
       (send to-sender 'SynAck)
@@ -58,15 +58,15 @@
     ;; The session is closed; receiver will not acknowledge further messages
     (define-state (Closed) (goto Closed)))
 
-   self))
+   receiver))
 
 ;; The sending side of an ABTP session
 (define (Sender to-recvr port status)
   (spawn-agent
-   (self
+   (sender
 
     (begin
-      (send to-recvr (list 'Syn port self))
+      (send to-recvr (list 'Syn port sender))
       (goto SynSent to-recvr port status))
 
     ;; Waiting for acknowledgment of the SYN
@@ -75,7 +75,7 @@
         [(list 'Write _) (goto SynSent to-recvr port status)]
         ['Close (goto SynSent to-recvr port status)]
         ['SynAck
-         (send status (list 'Connected self))
+         (send status (list 'Connected sender))
          (goto Ready 'Seq0 to-recvr port status)]
         ['Ack1 (goto SynSent to-recvr port status)]
         ['Ack0 (goto SynSent to-recvr port status)]
@@ -201,15 +201,15 @@
          (goto-this-state)]
         [_ (goto-this-state)])))
 
-   self))
+   sender))
 
 ;; Manages a collection of senders and receivers
 (define (Manager to-app nic-registration)
   (spawn-agent
-   (self
+   (manager
 
     (begin
-      (send nic-registration self)
+      (send nic-registration manager)
       (goto Ready to-app 'Empty))
 
     ;; Ready to accept commands or network messages
@@ -247,7 +247,7 @@
               (goto Ready to-app receivers)]
              ['False (goto LookingForReceiver message rest to-app receivers)])])]))
 
-   self))
+   manager))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specifications
