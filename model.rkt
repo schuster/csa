@@ -14,8 +14,8 @@
      (match [p f] ...)
      (goto s e ...)
      (spawn-agent (c f S ...) f))
-  (S (define-state (s x ...) f ...)
-     (define-state (s x ...) f ... [(timeout n) f]))
+  (S (define-state (s x ...) f)
+     (define-state (s x ...) f [(timeout n) f]))
   (e x
      c
      n
