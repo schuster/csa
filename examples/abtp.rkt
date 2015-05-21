@@ -72,14 +72,10 @@
     ;; Waiting for acknowledgment of the SYN
     (define-state (SynSent to-recvr port status)
       (match m
-        [(list 'Write _) (goto SynSent to-recvr port status)]
-        ['Close (goto SynSent to-recvr port status)]
         ['SynAck
          (send status (list 'Connected sender))
          (goto Ready 'Seq0 to-recvr port status)]
-        ['Ack1 (goto SynSent to-recvr port status)]
-        ['Ack0 (goto SynSent to-recvr port status)]
-        ['FinAck (goto SynSent to-recvr port status)])
+        [_ (goto SynSent to-recvr port status)])
       [(timeout 3)
         (send status 'ConnectFailed)
         (goto ClosedState)])
