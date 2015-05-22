@@ -55,8 +55,8 @@
   (po *
       y
       (list po ...)
-      (spec-chan c-hat)
-      (spec-chan self))
+      c-hat
+      self)
   (y (quote variable-not-otherwise-mentioned))
 
   ;; Names

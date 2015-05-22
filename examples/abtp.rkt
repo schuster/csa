@@ -262,7 +262,7 @@
       (Closed) (out [status 'ConnectFailed])]
     [unobs ->
       (Connected status)
-      (out [status (list 'Connected (spec-chan self))])])
+      (out [status (list 'Connected self)])])
   (define-state (Connected status)
     [unobs -> (Closed) (out [status 'ErrorClosed])]
     [(list 'Write r) -> (Connected status) (out [r 'Queued])]
