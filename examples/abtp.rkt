@@ -258,10 +258,8 @@
 ;; Defines the behavior of an ABTP sender, from the point of view of the application layer
 (define-spec SenderSpec
   (define-state (Connecting status)
-    [unobs ->
-      (Closed) (out [status 'ConnectFailed])]
-    [unobs ->
-      (Connected status)
+    [unobs -> (Closed) (out [status 'ConnectFailed])]
+    [unobs -> (Connected status)
       (out [status (list 'Connected self)])])
   (define-state (Connected status)
     [unobs -> (Closed) (out [status 'ErrorClosed])]
