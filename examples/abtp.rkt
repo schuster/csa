@@ -20,7 +20,7 @@
       (goto Respond1 to-sender to-app))
 
     ;; Waiting for a Seq0 message
-    (define-state (Respond0 to-sender to-app)
+    (define-state (Respond0 to-sender to-app) (m)
       (match m
         [(list 'Syn p) (goto Respond0 to-sender to-app)] ; ignore Syn
         [(list 'Write port seq content)
@@ -38,7 +38,7 @@
        (goto Respond0 to-sender to-app)])
 
     ;; Waiting for a Seq1 message
-    (define-state (Respond1 to-sender to-app)
+    (define-state (Respond1 to-sender to-app) (m)
       (match m
         [(list 'Syn p) (goto Respond1 to-sender to-app)] ; ignore Syn
         [(list 'Write port seq content)
@@ -56,7 +56,7 @@
        (goto Respond1 to-sender to-app)])
 
     ;; The session is closed; receiver will not acknowledge further messages
-    (define-state (Closed) (goto Closed)))
+    (define-state (Closed) (m) (goto Closed)))
 
    receiver))
 
@@ -70,7 +70,7 @@
       (goto SynSent to-recvr port status))
 
     ;; Waiting for acknowledgment of the SYN
-    (define-state (SynSent to-recvr port status)
+    (define-state (SynSent to-recvr port status) (m)
       (match m
         ['SynAck
          (send status (list 'Connected sender))
@@ -81,7 +81,7 @@
         (goto ClosedState)])
 
     ;; Waiting for the application to request messages to write on the session
-    (define-state (Ready current-seq to-recvr port status)
+    (define-state (Ready current-seq to-recvr port status) (m)
       (match m
         [(list 'Write response)
                (send to-recvr (list 'Write port current-seq 'Unit))
@@ -102,7 +102,7 @@
                                dequeue-stack
                                to-recvr
                                port
-                               status)
+                               status) (m)
       (match m
         [(list 'Write r)
           (send r 'Queued)
@@ -145,7 +145,7 @@
     ;; The state in which we do the rebalancing of the enqueue and dequeue stacks to implement the
     ;; purely functional queue (happens after receving an ACK). When the rebalancing is done, we
     ;; either send the next thing in the queue or go back to Ready if the queue is empty.
-    (define-state (Rebalancing current-seq enqueue-stack dequeue-stack to-recvr port status)
+    (define-state (Rebalancing current-seq enqueue-stack dequeue-stack to-recvr port status) (m)
       (match m
         [(list 'Write r) (send r 'Queued)
          ;; NOTE: we enqueue the message into the middle of the stack, because we don't have a better
@@ -171,7 +171,7 @@
 
     ;; Waiting for a FIN/ACK from the receiver. If not received in time, will close with an error
     ;; status message instead.
-    (define-state (Closing status)
+    (define-state (Closing status) (m)
       (match m
         [(list 'Write r)
          (send r 'WriteFailed)
@@ -190,7 +190,7 @@
         (goto ClosedState)])
 
     ;; The final state for the session - no further commands or receiver messages are accepted.
-    (define-state (ClosedState)
+    (define-state (ClosedState) (m)
       (match m
         [(list 'Write r)
          (send r 'WriteFailed)
@@ -209,7 +209,7 @@
       (goto Ready to-app 'Empty))
 
     ;; Ready to accept commands or network messages
-    (define-state (Ready to-app receivers)
+    (define-state (Ready to-app receivers) (m)
       (match m
         [(list 'Connect to-recvr port status)
          ;; We use spawn-named-agent as a small hack to allow separate definition of agents; this
@@ -228,7 +228,7 @@
          (goto LookingForReceiver m port receivers to-app receivers)]))
 
     ;; The state in which we examine the receiver list one at a time to match a given port number
-    (define-state (LookingForReceiver message port remaining to-app receivers)
+    (define-state (LookingForReceiver message port remaining to-app receivers) (m)
       ;; NOTE: we just throw away message in this state, because of the lack of selective
       ;; receive. There are better, more sophisticated ways to handle this
       (match m

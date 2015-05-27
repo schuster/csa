@@ -45,13 +45,12 @@
     ;; run-time overhead of a function call, but I don't know enough about macros to figure that out
     ;; yet
     #:attributes (transition-func-generator)
-    (pattern (define-state (name:id formal:id ...)
+    (pattern (define-state (name:id formal:id ...) (message-var:id)
                body
                (~optional [(timeout timeout-amount:nat) timeout-body ...]))
              #:attr transition-func-generator
              (lambda (chan)
-               (with-syntax ([message-var (datum->syntax #'body 'm)]
-                             [chan chan])
+               (with-syntax ([chan chan])
                  #`(define (name formal ...)
                      (define handler-event
                        (handle-evt chan
