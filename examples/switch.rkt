@@ -1,6 +1,6 @@
 #lang csa
 
-;; A simple forwarding agent that sends its input to the most recently assigned output channel if in
+;; A simple forwarding agent that sends its input to the most recently assigned output address if in
 ;; the ON state, or discards the input if in the OFF state
 
 (provide Switch)

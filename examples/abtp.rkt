@@ -150,8 +150,7 @@
         [(list 'Write r) (send r 'Queued)
          ;; NOTE: we enqueue the message into the middle of the stack, because we don't have a better
          ;; choice. The lack of recursion means we can't rebalance the entire queue all at once
-         ;; without listening to other channels, and because we have no selective receive, we have to
-         ;; listen to this channel.
+         ;; without listening for messages.
          (goto Rebalancing current-seq enqueue-stack (list 'Stack dequeue-stack) to-recvr port status)]
         ['Close
          (send to-recvr (list 'Fin port))
