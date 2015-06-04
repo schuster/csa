@@ -78,7 +78,7 @@
         [_ (goto SynSent to-recvr port status)])
       [(timeout 3)
         (send status 'ConnectFailed)
-        (goto ClosedState)])
+        (goto Closed)])
 
     ;; Waiting for the application to request messages to write on the session
     (define-state (Ready current-seq to-recvr port status) (m)
@@ -140,7 +140,7 @@
           (goto AwaitingAck last-sent-seq (+ 1 send-attempts) enqueue-stack dequeue-stack to-recvr port status)]
          ['False
           (send status 'ErrorClosed)
-          (goto ClosedState)])])
+          (goto Closed)])])
 
     ;; The state in which we do the rebalancing of the enqueue and dequeue stacks to implement the
     ;; purely functional queue (happens after receving an ACK). When the rebalancing is done, we
@@ -183,13 +183,13 @@
         ['Ack1 (goto-this-state)]
         ['FinAck
          (send status 'Closed)
-         (goto ClosedState)])
+         (goto Closed)])
       [(timeout 3)
         (send status 'ErrorClosed)
-        (goto ClosedState)])
+        (goto Closed)])
 
     ;; The final state for the session - no further commands or receiver messages are accepted.
-    (define-state (ClosedState) (m)
+    (define-state (Closed) (m)
       (match m
         [(list 'Write r)
          (send r 'WriteFailed)
