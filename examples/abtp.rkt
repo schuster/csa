@@ -131,7 +131,9 @@
                (send to-recvr (list 'Write port 'Seq1 'Unit))
                (goto AwaitingAck 'Seq1 1 enqueue-stack dequeue-stack to-recvr port status)])]
            ['Seq1 (goto-this-state)])]
-        ['FinAck (goto-this-state)])
+        ['FinAck (goto-this-state)]
+        [_ (goto-this-state) ; ignore unknown messages
+           ])
 
       [(timeout 3)
        (match (< send-attempts 3)
@@ -183,7 +185,9 @@
         ['Ack1 (goto-this-state)]
         ['FinAck
          (send status 'Closed)
-         (goto Closed)])
+         (goto Closed)]
+        [_ (goto-this-state) ; ignore unknown messages
+           ])
       [(timeout 3)
         (send status 'ErrorClosed)
         (goto Closed)])
@@ -224,14 +228,16 @@
         [(list 'Write port seq content)
          (goto LookingForReceiver m port receivers to-app receivers)]
         [(list 'Fin port)
-         (goto LookingForReceiver m port receivers to-app receivers)]))
+         (goto LookingForReceiver m port receivers to-app receivers)]
+        [_ (goto-this-state) ; ignore unknown messages
+           ]))
 
     ;; The state in which we examine the receiver list one at a time to match a given port number
     (define-state (LookingForReceiver message port remaining to-app receivers) (m)
-      ;; NOTE: we just throw away message in this state, because of the lack of selective
+      ;; NOTE: we just throw away messages in this state, because of the lack of selective
       ;; receive. There are better, more sophisticated ways to handle this
       (match m
-        [(list 'Connect _ _ _) (goto-this-state)])
+        [_ (goto-this-state)])
       [(timeout 0)
         (match remaining
           ['Empty (goto Ready to-app receivers)]
