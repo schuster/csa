@@ -10,6 +10,7 @@
  quote
  list
  begin
+ let
  (rename-out [csa-match match])
  +
  (rename-out [csa- -])
@@ -18,13 +19,13 @@
  define-state
  timeout
  send
- spawn-agent
+ spawn
  spawn-named-agent
  goto
  goto-this-state
 
  ;; specifications
- define-spec
+ spec
 
  ;; for debugging only
  displayln
@@ -35,6 +36,7 @@
 
 (require racket/async-channel
          (for-syntax syntax/parse
+                     racket/syntax
                      redex/reduction-semantics
                      "model.rkt"))
 
@@ -71,26 +73,25 @@
                        (current-state-thunk current-state-body)
                        (current-state-body))))))))
 
-(define-syntax (spawn-agent stx)
+(define-syntax (spawn stx)
   (syntax-parse stx
-    [(_ (chan:id init state-def:state-definition ...) body ...)
-     (with-syntax ([(state-def-function ...)
-                    (map (lambda (gen) (gen #'chan)) (attribute state-def.transition-func-generator))])
-     #'(let ()
-         (define chan (make-async-channel))
-         (thread (lambda ()
-                   state-def-function ...
-                   (current-state-thunk #f)
-                   (let ([transition-thunk init])
-                     (transition-thunk))))
-         body ...))]))
+    [(_ init state-def:state-definition ...)
+     (with-syntax* ([self (datum->syntax stx 'self)]
+                    [(state-def-function ...)
+                     (map (lambda (gen) (gen #'self)) (attribute state-def.transition-func-generator))])
+       #'(let ()
+           (define self (make-async-channel))
+           (thread (lambda ()
+                     state-def-function ...
+                     (current-state-thunk #f)
+                     (let ([transition-thunk init])
+                       (transition-thunk))))
+           self))]))
 
 (define-syntax (spawn-named-agent stx)
   (syntax-parse stx
-    [(_ channel:id (agent:id arg ...) body ...)
-     #'(let ()
-         (define channel (agent arg ...))
-         body ...)]))
+    [(_ (agent:id arg ...))
+     #'(agent arg ...)]))
 
 ;; (define-keywords (func-name ...) keyword ...) defines each keyword as syntax that can only be used
 ;; in one of the given function names. Same for the case where (func-name ...) is replaced with
@@ -127,10 +128,12 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specifications
 
-(define-syntax (define-spec stx)
-  (unless (redex-match aps D (syntax->datum stx))
-    (raise-syntax-error #f "Invalid syntax for specification" stx))
-  #'(void))
+(define-syntax (spec stx)
+  (syntax-parse stx
+    [(_ the-spec)
+     (unless (redex-match aps Σ (syntax->datum #'the-spec))
+       (raise-syntax-error #f "Invalid syntax for specification" stx))
+     #'(void)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Natural number operations

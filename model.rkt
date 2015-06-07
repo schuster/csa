@@ -9,59 +9,43 @@
 (require redex/reduction-semantics)
 
 (define-language csa
-  ;; begin, case, goto, spawn
-  (f (begin e ... f)
-     (match [p f] ...)
+  (e (spawn e S ...)
      (goto s e ...)
-     (spawn-agent (c f S ...) f))
-  (S (define-state (s x ...) f)
-     (define-state (s x ...) f [(timeout n) f]))
-  (e x
-     c
-     n
-     (b e ...)
-     y
+     (send e e)
+     self
+     (begin e ... e)
+     (let ([x e] ...) e)
+     (match [p e] ...)
      (list e ...)
-     (send e e))
-  (p x
-     y
+     (b e ...)
+     t
+     x
+     n)
+  (S (define-state (s x ...) e)
+     (define-state (s x ...) e [(timeout n) e]))
+  (p *
+     x
+     t
      (list p ...))
   (b + - < =)
-  ((x c s) variable-not-otherwise-mentioned)
-  (y (quote variable-not-otherwise-mentioned))
+  ((x s) variable-not-otherwise-mentioned)
+  (t (quote variable-not-otherwise-mentioned))
   (n natural))
 
-(define-language aps
-  (D (define-spec d
-       (define-state (s-hat c-hat ...) R ...) ...))
-  ;; differs from the paper; R is a state clause
-  (R [pi -> (s-hat e-hat ...) (out o ...) (activ π ...)]
-     [unobs -> (s-hat e-hat ...) (out o ...) (activ π ...)]
-
-     ;; Shorthands
-     [pi -> (s-hat e-hat ...) (out o ...)]
-     [pi -> (s-hat e-hat ...) (activ π ...)]
-     [pi -> (s-hat e-hat ...)]
-     [unobs -> (s-hat e-hat ...) (out o ...)]
-     [unobs -> (s-hat e-hat ...) (activ π ...)]
-     [unobs -> (s-hat e-hat ...)])
-  (o [e-hat po])
-  (π [c-hat d (s-hat e-hat ...)])
-  (e-hat c-hat)
-  (pi *
-      y
-      (list pi ...)
-      c-hat)
+(define-extended-language aps
+  csa
+  (Σ ((goto s x ...) S-hat ...)
+     ;; (define-spec d
+     ;;      (define-state (s-hat c-hat ...) R ...) ...)
+     )
+  (e-hat (goto s x ...)
+         (with-outputs ([x po] ...) e-hat)
+         (let-specs ([x Σ] ...) e-hat))
+  (S-hat (define-state (s x ...) (ε -> e-hat) ...))
+  (ε unobs
+     p)
   (po *
-      y
-      (list po ...)
-      c-hat
-      self)
-  (y (quote variable-not-otherwise-mentioned))
-
-  ;; Names
-  (d variable-not-otherwise-mentioned)
-  (s-hat variable-not-otherwise-mentioned)
-
-  ;; Should come from the PL
-  (c-hat variable-not-otherwise-mentioned))
+      x
+      self
+      t
+      (list po ...)))

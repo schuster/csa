@@ -6,32 +6,31 @@
 (provide Switch)
 
 (define (Switch out)
-  (spawn-agent
-   (self
-    (goto On out)
-    (define-state (Off out) (e)
-      (match e
-        [(list 'In m) (goto Off out)]
-        ['Toggle (goto On out)]
-        [(list 'NewOut c) (goto Off c)]))
-    (define-state (On out) (e)
-      (match e
-        [(list 'In m)
-         (send out m)
-         (goto On out)]
-        ['Toggle (goto Off out)]
-        [(list 'NewOut c) (goto On c)])))
-   self))
+  (spawn
+   (goto On out)
+   (define-state (Off out) (e)
+     (match e
+       [(list 'In m) (goto Off out)]
+       ['Toggle (goto On out)]
+       [(list 'NewOut c) (goto Off c)]))
+   (define-state (On out) (e)
+     (match e
+       [(list 'In m)
+        (send out m)
+        (goto On out)]
+       ['Toggle (goto Off out)]
+       [(list 'NewOut c) (goto On c)]))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specification
 
-(define-spec SwitchSpec
+(spec
+ ((goto Off initial-out)
   (define-state (Off current-out)
-    [(list 'In *) -> (On current-out)]
-    ['Toggle -> (On current-out)]
-    [(list 'NewOut c) -> (Off c)])
+    [(list 'In *) -> (goto On current-out)]
+    ['Toggle -> (goto On current-out)]
+    [(list 'NewOut c) -> (goto Off c)])
   (define-state (On current-out)
-    [(list 'In *) -> (On current-out) (out [current-out *])]
-    ['Toggle -> (Off current-out)]
-    [(list 'NewOut c) -> (On c)]))
+    [(list 'In *) -> (with-outputs ([current-out *]) (goto On current-out))]
+    ['Toggle -> (goto Off current-out)]
+    [(list 'NewOut c) -> (goto On c)])))
