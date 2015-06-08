@@ -40,7 +40,7 @@
      )
   (e-hat (goto s x ...)
          (with-outputs ([x po] ...) e-hat)
-         (let-specs ([x Σ] ...) e-hat))
+         (let-spec (x Σ) e-hat))
   (S-hat (define-state (s x ...) (ε -> e-hat) ...))
   (ε unobs
      p)
