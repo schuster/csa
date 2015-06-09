@@ -17,7 +17,6 @@
      (let ([x e] ...) e)
      (match [p e] ...)
      (list e ...)
-     (b e ...)
      t
      x
      n)
@@ -27,7 +26,6 @@
      x
      t
      (list p ...))
-  (b + - < =)
   ((x s) variable-not-otherwise-mentioned)
   (t (quote variable-not-otherwise-mentioned))
   (n natural))
