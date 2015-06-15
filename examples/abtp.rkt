@@ -61,21 +61,21 @@
   (spawn
    (begin
      (send to-recvr (list 'Syn port self))
-     (goto SynSent to-recvr port status))
+     (goto Connecting to-recvr port status))
 
    ;; Waiting for acknowledgment of the SYN
-   (define-state (SynSent to-recvr port status) (m)
+   (define-state (Connecting to-recvr port status) (m)
      (match m
        ['SynAck
         (send status (list 'Connected self))
-        (goto Ready 'Seq0 to-recvr port status)]
-       [_ (goto SynSent to-recvr port status)])
+        (goto Connected 'Seq0 to-recvr port status)]
+       [_ (goto Connecting to-recvr port status)])
      [(timeout 3)
       (send status 'ConnectFailed)
       (goto Closed)])
 
    ;; Waiting for the application to request messages to write on the session
-   (define-state (Ready current-seq to-recvr port status) (m)
+   (define-state (Connected current-seq to-recvr port status) (m)
      (match m
        [(list 'Write response)
         (send to-recvr (list 'Write port current-seq 'Unit))
@@ -86,7 +86,7 @@
         (goto Closing status)]
        [_
         ;; can ignore all receiver messages in this state
-        (goto Ready current-seq to-recvr port status)]))
+        (goto Connected current-seq to-recvr port status)]))
 
    ;; Awaiting an acknowledgment from the receiver for a session message
    (define-state (AwaitingAck last-sent-seq
@@ -140,7 +140,7 @@
 
    ;; The state in which we do the rebalancing of the enqueue and dequeue stacks to implement the
    ;; purely functional queue (happens after receving an ACK). When the rebalancing is done, we
-   ;; either send the next thing in the queue or go back to Ready if the queue is empty.
+   ;; either send the next thing in the queue or go back to Connected if the queue is empty.
    (define-state (Rebalancing current-seq enqueue-stack dequeue-stack to-recvr port status) (m)
      (match m
        [(list 'Write r) (send r 'Queued)
@@ -157,7 +157,7 @@
       (match enqueue-stack
         ['Empty
          (match dequeue-stack
-           ['Empty (goto Ready current-seq to-recvr port status)]
+           ['Empty (goto Connected current-seq to-recvr port status)]
            [(list 'Stack dequeue-stack)
             (send to-recvr (list 'Write port current-seq 'Unit))
             (goto AwaitingAck current-seq 1 enqueue-stack dequeue-stack to-recvr port status)])]
@@ -243,8 +243,8 @@
 ;; Defines the behavior of the ABTP manager, from the consumer's point of view
 
 (spec
- ((goto Always)
-  (define-state (Always)
+ ((goto Ready)
+  (define-state (Ready)
     [(list 'Connect * * status) ->
      (let-spec (s
                 ((goto Connecting status)
@@ -268,4 +268,4 @@
                  (define-state (Closed)
                    [(list 'Write r) -> (with-outputs ([r 'WriteFailed]) (goto Closed))]
                    ['Close -> (goto Closed)])))
-               (goto Always))])))
+               (goto Ready))])))
