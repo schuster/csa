@@ -25,12 +25,12 @@
 ;; Specification
 
 (spec
- ((goto Off initial-out)
-  (define-state (Off current-out)
-    [(list 'In *) -> (goto On current-out)]
-    ['Toggle -> (goto On current-out)]
-    [(list 'NewOut c) -> (goto Off c)])
-  (define-state (On current-out)
-    [(list 'In *) -> (with-outputs ([current-out *]) (goto On current-out))]
-    ['Toggle -> (goto Off current-out)]
-    [(list 'NewOut c) -> (goto On c)])))
+ (goto Off initial-out)
+ (define-state (Off current-out)
+   [(list 'In *) -> (goto On current-out)]
+   ['Toggle -> (goto On current-out)]
+   [(list 'NewOut c) -> (goto Off c)])
+ (define-state (On current-out)
+   [(list 'In *) -> (with-outputs ([current-out *]) (goto On current-out))]
+   ['Toggle -> (goto Off current-out)]
+   [(list 'NewOut c) -> (goto On c)]))

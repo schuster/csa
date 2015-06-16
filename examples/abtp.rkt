@@ -243,29 +243,29 @@
 ;; Defines the behavior of the ABTP manager, from the consumer's point of view
 
 (spec
- ((goto Ready)
-  (define-state (Ready)
-    [(list 'Connect * * status) ->
-     (let-spec (s
-                ((goto Connecting status)
-                 (define-state (Connecting status)
-                   [unobs ->
-                     (with-outputs ([status 'ConnectFailed])
-                       (goto Closed))]
-                   [unobs ->
-                     (with-outputs
-                       ([status (list 'Connected self)])
-                       (goto Connected status))])
-                 (define-state (Connected status)
-                   [unobs -> (with-outputs ([status 'ErrorClosed]) (goto Closed))]
-                   [(list 'Write r) -> (with-outputs ([r 'Queued]) (goto Connected status))]
-                   ['Close -> (goto Closing status)])
-                 (define-state (Closing status)
-                   [(list 'Write r) -> (with-outputs ([r 'WriteFailed]) (goto Closing status))]
-                   ['Close -> (goto Closing status)]
-                   [unobs -> (with-outputs ([status 'ErrorClosed]) (goto Closed))]
-                   [unobs -> (with-outputs ([status 'Closed]) (goto Closed))])
-                 (define-state (Closed)
-                   [(list 'Write r) -> (with-outputs ([r 'WriteFailed]) (goto Closed))]
-                   ['Close -> (goto Closed)])))
-               (goto Ready))])))
+ (goto Ready)
+ (define-state (Ready)
+   [(list 'Connect * * status) ->
+    (let-spec (s
+               (goto Connecting status)
+               (define-state (Connecting status)
+                 [unobs ->
+                   (with-outputs ([status 'ConnectFailed])
+                     (goto Closed))]
+                 [unobs ->
+                   (with-outputs
+                     ([status (list 'Connected self)])
+                     (goto Connected status))])
+               (define-state (Connected status)
+                 [unobs -> (with-outputs ([status 'ErrorClosed]) (goto Closed))]
+                 [(list 'Write r) -> (with-outputs ([r 'Queued]) (goto Connected status))]
+                 ['Close -> (goto Closing status)])
+               (define-state (Closing status)
+                 [(list 'Write r) -> (with-outputs ([r 'WriteFailed]) (goto Closing status))]
+                 ['Close -> (goto Closing status)]
+                 [unobs -> (with-outputs ([status 'ErrorClosed]) (goto Closed))]
+                 [unobs -> (with-outputs ([status 'Closed]) (goto Closed))])
+               (define-state (Closed)
+                 [(list 'Write r) -> (with-outputs ([r 'WriteFailed]) (goto Closed))]
+                 ['Close -> (goto Closed)]))
+              (goto Ready))]))

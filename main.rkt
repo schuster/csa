@@ -130,8 +130,8 @@
 
 (define-syntax (spec stx)
   (syntax-parse stx
-    [(_ the-spec)
-     (unless (redex-match aps Σ (syntax->datum #'the-spec))
+    [(_ spec-contents ...)
+     (unless (redex-match aps ((goto s u ...) S-hat ...) (syntax->datum #'(spec-contents ...)))
        (raise-syntax-error #f "Invalid syntax for specification" stx))
      #'(void)]))
 

@@ -32,16 +32,13 @@
 
 (define-extended-language aps
   csa
-  (Σ ((goto s x ...) S-hat ...)
-     ;; (define-spec d
-     ;;      (define-state (s-hat c-hat ...) R ...) ...)
-     )
-  (e-hat (goto s x ...)
-         (with-outputs ([x po] ...) e-hat)
-         (let-spec (x Σ) e-hat))
+  (e-hat (let-spec (x (goto s u ...) S-hat ...) e-hat)
+         (goto s u ...)
+         (with-outputs ([u po] ...) e-hat))
   (S-hat (define-state (s x ...) (ε -> e-hat) ...))
   (ε unobs
      p)
+  (u x) ; arguments
   (po *
       x
       self
