@@ -250,12 +250,12 @@
                (goto Connecting status)
                (define-state (Connecting status)
                  [unobs ->
-                   (with-outputs ([status 'ConnectFailed])
-                     (goto Closed))]
-                 [unobs ->
                    (with-outputs
                      ([status (list 'Connected self)])
-                     (goto Connected status))])
+                     (goto Connected status))]
+                 [unobs ->
+                   (with-outputs ([status 'ConnectFailed])
+                     (goto Closed))])
                (define-state (Connected status)
                  [unobs -> (with-outputs ([status 'ErrorClosed]) (goto Closed))]
                  [(list 'Write r) -> (with-outputs ([r 'Queued]) (goto Connected status))]
