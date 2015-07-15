@@ -15,13 +15,13 @@
      self
      (begin e ... e)
      (let ([x e] ...) e)
-     (match [p e] ...)
+     (match e [p e] ...)
      (list e ...)
      t
      x
      n)
-  (S (define-state (s x ...) e)
-     (define-state (s x ...) e [(timeout n) e]))
+  (S (define-state (s x ...) (x) e)
+     (define-state (s x ...) (x) e [(timeout n) e]))
   (p *
      x
      t
