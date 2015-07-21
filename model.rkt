@@ -7,7 +7,9 @@
          inject-message
          handler-step
          aps
-         aps-eval)
+         aps-eval
+         subst-n/aps
+         subst/aps)
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -81,7 +83,16 @@
     (==> (begin v)
          v
          Begin2)
-    ;; TODO: send
+
+    ;; TODO: do the ρ/χ updates
+    (--> ((any_a1 ... (a ((S ...) (in-hole E (send a_2 v)))) any_a2 ...)
+          (any_packets ...)
+          ρ χ)
+         ((any_a1 ... (a ((S ...) (in-hole E v)))            any_a2 ...)
+          (any_packets ... (a_2 <= v))
+          ρ χ)
+         Send)
+
     ;; TODO: let
     ;; TODO: match
 
@@ -211,7 +222,7 @@
 ;; APS
 
 (define-extended-language aps
-  csa
+  csa-eval
   (e-hat (let-spec (x (goto s u ...) S-hat ...) e-hat)
          (goto s u ...)
          (with-outputs ([u po] ...) e-hat))
@@ -229,4 +240,38 @@
   aps
   (z ((S-hat ...) e-hat σ))
   (σ a null)
-  (u .... a))
+  (u .... a)
+  (v-hat a a-hat))
+
+(define-metafunction aps-eval
+  subst-n/aps : e-hat (x v-hat) ... -> e-hat
+  [(subst-n/aps e-hat) e-hat]
+  [(subst-n/aps e-hat (x v-hat) any_rest ...)
+   (subst-n/aps (subst/aps e-hat x v-hat) any_rest ...)])
+
+;; TODO: write tests for this substitution
+
+(define-metafunction aps-eval
+  subst/aps : e-hat x v-hat -> e-hat
+  [(subst/aps (goto s u ...) x v-hat)
+   (goto s (subst/aps/u u x v-hat) ...)]
+  [(subst/aps (with-outputs ([u po] ...) e-hat) x v-hat)
+   (with-outputs ([(subst/aps/u u x v-hat) (subst/aps/po po x v-hat)] ...) (subst/aps e-hat x v-hat))]
+  ;; TODO: write the other clauses
+  )
+
+(define-metafunction aps-eval
+  subst/aps/u : u x v-hat -> u
+  [(subst/aps/u x x v-hat) v-hat]
+  [(subst/aps/u x_2 x v-hat) x_2]
+  [(subst/aps/u a x v-hat) a])
+
+(define-metafunction aps-eval
+  subst/aps/po : po x v-hat -> po
+  [(subst/aps/po x x v-hat) v-hat]
+  [(subst/aps/po x_2 x v-hat) x_2]
+  [(subst/aps/po a x v-hat) a]
+  [(subst/aps/po a-hat x v-hat) a-hat]
+  [(subst/aps/po t x v-hat) t]
+  [(subst/aps/po * x v-hat) *]
+  [(subst/aps/po (list po ...) x v-hat) (list (subst/aps/po po x v-hat) ...)])
