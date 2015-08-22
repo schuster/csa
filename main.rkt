@@ -16,6 +16,8 @@
  (rename-out [csa- -])
  (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
                (rename csa< < (-> natural-number/c natural-number/c any/c)))
+ (rename-out [csa-cond cond])
+ else
  define-state
  timeout
  send
@@ -163,3 +165,13 @@
      #'(match e
          [pat body ...] ...
          [_ (sync)])])) ; A match without a matching clause is a stuck state
+
+;; ---------------------------------------------------------------------------------------------------
+;; Conditionals
+
+(define-syntax (csa-cond stx)
+  (syntax-parse stx #:literals (else)
+    [(_ [test result1 ...+] ... [else result2 ...+])
+     #`(cond
+        [test result1 ...] ...
+        [else result2 ...])]))
