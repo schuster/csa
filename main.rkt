@@ -25,6 +25,7 @@
  spawn-named-agent
  goto
  goto-this-state
+ define-actor
 
  ;; specifications
  spec
@@ -77,8 +78,11 @@
 
 (define-syntax (spawn stx)
   (syntax-parse stx
+    [(_ name:id args ...)
+     (syntax/loc stx (name args ...))]
     [(_ init state-def:state-definition ...)
-     (with-syntax* ([self (datum->syntax stx 'self)]
+     ;; TODO: figure out why we have to use #'init here instead of stx
+     (with-syntax* ([self (datum->syntax #'init 'self)]
                     [(state-def-function ...)
                      (map (lambda (gen) (gen #'self)) (attribute state-def.transition-func-generator))])
        #'(let ()
@@ -175,3 +179,14 @@
      #`(cond
         [test result1 ...] ...
         [else result2 ...])]))
+
+;; ---------------------------------------------------------------------------------------------------
+
+;; Actor definitions (for presentation)
+
+(define-syntax (define-actor stx)
+  (syntax-parse stx
+    [(_ (actor-name args ...) init states ...)
+     (syntax/loc stx
+       (define (actor-name args ...)
+         (spawn init states ...)))]))
