@@ -79,4 +79,5 @@
                    ['MoreRecs -> (goto Working user)])
                  (define-state (Done user)
                    ['MoreRecs -> (goto Working user)]))
-        (goto Ready))])))
+        (with-outputs ([user (list 'Ok worker)])
+          (goto Ready)))])))
