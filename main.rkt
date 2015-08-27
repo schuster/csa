@@ -116,7 +116,7 @@
          (define-syntax (keyword stx)
            (raise-syntax-error #f #,error-message stx)) ...)]))
 
-(define-keywords (spawn-agent define-spec) define-state)
+(define-keywords (spawn-agent) define-state)
 (define-keywords define-state timeout)
 
 (define (send chan message)
