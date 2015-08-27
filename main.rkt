@@ -12,6 +12,7 @@
  begin
  let
  (rename-out [csa-match match])
+ * ; for match, specifically
  +
  (rename-out [csa- -])
  (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
@@ -158,17 +159,20 @@
 
 (begin-for-syntax
   (define-syntax-class match-pattern
-    #:literals (list quote)
-    (pattern x:id)
-    (pattern (quote s:id))
-    (pattern (list p:match-pattern ...))))
+    #:literals (list quote *)
+    #:attributes (stx)
+    (pattern * #:attr stx (syntax '_))
+    (pattern x:id #:attr stx (syntax x))
+    (pattern (quote s:id) #:attr stx (syntax (quote s)))
+    (pattern (list p:match-pattern ...) #:attr stx (syntax (list p ...)))))
 
 (define-syntax (csa-match stx)
   (syntax-parse stx
     [(_ e [pat:match-pattern body ...+] ...)
-     #'(match e
-         [pat body ...] ...
-         [_ (sync)])])) ; A match without a matching clause is a stuck state
+     (with-syntax ([(new-pat ...) (attribute pat.stx)])
+       #`(match e
+           [new-pat body ...] ...
+           [_ (sync)]))])) ; A match without a matching clause is a stuck state
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conditionals

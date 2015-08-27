@@ -10,7 +10,7 @@
        (let ([worker (spawn Worker book user)])
          (send user (list 'Ok worker))
          (goto Ready))]
-      [_ (goto Ready)])))
+      [* (goto Ready)])))
 
 (define-actor (Worker book user)
   (begin
@@ -21,25 +21,25 @@
       [(list 'Tags book-tags)
        (spawn RecommendationEngine book-tags self)
        (goto AwaitIsbns)]
-      [_ (goto AwaitTags)]))
+      [* (goto AwaitTags)]))
   (define-state (AwaitIsbns) (m)
     (match m
       [(list 'Recs recommendation-isbns)
        (spawn IsbnLookup recommendation-isbns self)
        (goto AwaitData)]
-      [_ (goto AwaitIsbns)]))
+      [* (goto AwaitIsbns)]))
   (define-state (AwaitData) (m)
     (match m
       [(list 'Data recommendation-data)
        (send user (list 'Done recommendation-data))
        (goto Done)]
-      [_ (goto AwaitData)]))
+      [* (goto AwaitData)]))
   (define-state (Done) (m)
     (match m
       ['MoreRecs
        (spawn Tagger book self)
        (goto AwaitTags)]
-      [_ (goto Done)])))
+      [* (goto Done)])))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Dummy implementations
