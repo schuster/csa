@@ -67,13 +67,16 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specificiation
 
-;; (define-spec WebServiceSpec
-;;   (define-state (Ready)
-;;     [(list 'Req * user)
-;;      (let-spec (worker
-;;        (goto Working)
-;;        (define-state (Working user)
-;;          [unobs -> (with-outputs ([user (list 'Done *)]) (goto Done user))]
-;;          ['Cancel -> (with-outputs ([user 'Cancelled]) (goto Done user))])
-;;        (define-state (Done user)
-;;          ['Cancel -> (goto Done user)])))]))
+(define WebServiceSpec
+  (spec
+   (goto Ready)
+   (define-state (Ready)
+     [(list 'Req * user) ->
+      (let-spec (worker
+                 (goto Working)
+                 (define-state (Working user)
+                   [unobs -> (with-outputs ([user (list 'Done *)]) (goto Done user))]
+                   ['MoreRecs -> (goto Working user)])
+                 (define-state (Done user)
+                   ['MoreRecs -> (goto Working user)]))
+        (goto Ready))])))
