@@ -28,6 +28,9 @@
  goto-this-state
  define-actor
 
+ ;; basic operations, for examples
+ (rename-out [string-length length])
+
  ;; specifications
  spec
 
