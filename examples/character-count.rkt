@@ -25,11 +25,10 @@
  (goto Off initial-out)
  (define-state (Init)
    [(list 'Message String) -> (goto On current-out)]
-   [(list 'NewOut c) -> (goto Off c)])
- (define-state (On current-out)
-   [(list 'In *) -> (with-outputs ([current-out *]) (goto On current-out))]
+   [(list 'NewOut t) -> (goto Off t)])
+ (define-state (On t)
+   [(list 'In *) -> (with-outputs ([current-out (list 'WrappedMessage * *)]) (goto On current-out))]
    [(list 'NewOut c) -> (goto On c)]))
-
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Possible type ideas
