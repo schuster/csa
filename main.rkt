@@ -12,7 +12,7 @@
  begin
  let
  (rename-out [csa-match match])
- * ; for match, specifically
+ (rename-out [match-wildcard *])
  +
  (rename-out [csa- -])
  (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
@@ -160,11 +160,14 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Pattern matching
 
+(define-syntax (match-wildcard stx)
+  (raise-syntax-error #f "can only be used as a match pattern" stx))
+
 (begin-for-syntax
   (define-syntax-class match-pattern
-    #:literals (list quote *)
+    #:literals (list quote match-wildcard)
     #:attributes (stx)
-    (pattern * #:attr stx (syntax '_))
+    (pattern match-wildcard #:attr stx (syntax 'tmp))
     (pattern x:id #:attr stx (syntax x))
     (pattern (quote s:id) #:attr stx (syntax (quote s)))
     (pattern (list p:match-pattern ...) #:attr stx (syntax (list p ...)))))
