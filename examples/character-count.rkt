@@ -9,14 +9,22 @@
    (goto Init)
    (define-state (Init) (m)
      (match m
-       [(list 'Message s) (goto Init)]
-       [(list 'NewTarget t) (goto Running t)]))
+       [(list 'NewTarget t) (goto Running t)]
+       [* (goto Init)]))
    (define-state (Running target) (m)
      (match m
        [(list 'Message s)
         (send target (list 'WrappedMessage (length s) s))
         (goto Running target)]
-       [(list 'NewTarget new-target) (goto Running new-target)]))))
+       [(list 'NewTarget new-target) (goto Running new-target)]
+       ['Suspend (goto Suspended target)]
+       [* (goto Running target)]))
+   (define-state (Suspended target) (m)
+     (begin
+       (match m
+         [(list 'NewTarget new-target) (goto Running new-target)]
+         ['Resume (goto Running target)]
+         [* (goto Suspended target)])))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specification
@@ -28,6 +36,7 @@
    [(list 'NewOut t) -> (goto Off t)])
  (define-state (On t)
    [(list 'In *) -> (with-outputs ([current-out (list 'WrappedMessage * *)]) (goto On current-out))]
+   [(list 'In *) -> (goto On current-out)]
    [(list 'NewOut c) -> (goto On c)]))
 
 ;; ---------------------------------------------------------------------------------------------------
