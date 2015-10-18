@@ -2,19 +2,19 @@
 
 ;; just writing this in pseudocode for now
 
-(provide CharacterCounter)
+(provide ByteCounter)
 
-(define (CharacterCounter)
+(define (ByteCounter)
   (spawn
    (goto Init)
    (define-state (Init) (m)
      (match m
-       [(list 'NewTarget t) (goto Running t)]
+       [(list 'NewTarget t) (goto Forwarding t)]
        [* (goto Init)]))
    (define-state (Forwarding target) (m)
      (match m
-       [(list 'Message s)
-        (send target (list 'WrappedMessage (length s) s))
+       [(list 'Payload s)
+        (send target (list 'Packet (length s) s))
         (goto Forwarding target)]
        [(list 'NewTarget new-target) (goto Forwarding new-target)]
        ['Suspend (goto Suspended target)]
@@ -32,11 +32,13 @@
 (spec
  (goto Init)
  (define-state (Init)
-   [(list 'Message String) -> (goto On t)]
+   [(list 'Payload String) -> (goto On t)]
    [(list 'NewTarget t) -> (goto Off t)])
  (define-state (Running t)
-   [(list 'Message *) -> (with-outputs ([t (list 'WrappedMessage * *)]) (goto Running t))]
-   [(list 'Message *) -> (goto Running t)]
+   [(list 'Payload *) ->
+    (with-outputs ([t (list 'Packet * *)])
+      (goto Running t))]
+   [(list 'Payload *) -> (goto Running t)]
    [(list 'NewTarget new-t) -> (goto Running new-t)]))
 
 ;; ---------------------------------------------------------------------------------------------------
