@@ -11,33 +11,33 @@
      (match m
        [(list 'NewTarget t) (goto Running t)]
        [* (goto Init)]))
-   (define-state (Running target) (m)
+   (define-state (Forwarding target) (m)
      (match m
        [(list 'Message s)
         (send target (list 'WrappedMessage (length s) s))
-        (goto Running target)]
-       [(list 'NewTarget new-target) (goto Running new-target)]
+        (goto Forwarding target)]
+       [(list 'NewTarget new-target) (goto Forwarding new-target)]
        ['Suspend (goto Suspended target)]
-       [* (goto Running target)]))
+       [* (goto Forwarding target)]))
    (define-state (Suspended target) (m)
      (begin
        (match m
-         [(list 'NewTarget new-target) (goto Running new-target)]
-         ['Resume (goto Running target)]
+         [(list 'NewTarget new-target) (goto Forwarding new-target)]
+         ['Resume (goto Forwarding target)]
          [* (goto Suspended target)])))))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Specification
 
 (spec
- (goto Off initial-out)
+ (goto Init)
  (define-state (Init)
-   [(list 'Message String) -> (goto On current-out)]
-   [(list 'NewOut t) -> (goto Off t)])
- (define-state (On t)
-   [(list 'In *) -> (with-outputs ([current-out (list 'WrappedMessage * *)]) (goto On current-out))]
-   [(list 'In *) -> (goto On current-out)]
-   [(list 'NewOut c) -> (goto On c)]))
+   [(list 'Message String) -> (goto On t)]
+   [(list 'NewTarget t) -> (goto Off t)])
+ (define-state (Running t)
+   [(list 'Message *) -> (with-outputs ([t (list 'WrappedMessage * *)]) (goto Running t))]
+   [(list 'Message *) -> (goto Running t)]
+   [(list 'NewTarget new-t) -> (goto Running new-t)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Possible type ideas
