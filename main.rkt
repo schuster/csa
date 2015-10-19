@@ -29,7 +29,7 @@
  define-actor
 
  ;; basic operations, for examples
- (rename-out [string-length length])
+ (rename-out [string-length byte-length])
 
  ;; specifications
  spec

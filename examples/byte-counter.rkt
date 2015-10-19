@@ -14,7 +14,7 @@
    (define-state (Forwarding target) (m)
      (match m
        [(list 'Payload s)
-        (send target (list 'Packet (length s) s))
+        (send target (list 'Packet (byte-length s) s))
         (goto Forwarding target)]
        [(list 'NewTarget new-target) (goto Forwarding new-target)]
        ['Suspend (goto Suspended target)]
@@ -32,7 +32,7 @@
 (spec
  (goto Init)
  (define-state (Init)
-   [(list 'Payload String) -> (goto On t)]
+   [(list 'Payload Bytes) -> (goto On t)]
    [(list 'NewTarget t) -> (goto Off t)])
  (define-state (Running t)
    [(list 'Payload *) ->
