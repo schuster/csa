@@ -28,7 +28,7 @@
         (send peer 'Seized)
         (send lim 'StartRing)
         (goto RingingBSide lim analyzer peer)]
-       [_ (goto Idle lim analyzer)]))
+       [* (goto Idle lim analyzer)]))
 
    (define-state (GettingFirstDigit lim analyzer) (m)
      (match m
@@ -42,7 +42,7 @@
        [(list 'Seize peer)
         (send peer 'Rejected)
         (goto GettingFirstDigit lim analyzer)]
-       [_ (goto GettingFirstDigit lim analyzer)]))
+       [* (goto GettingFirstDigit lim analyzer)]))
 
    (define-state (GettingNumber lim analyzer number) (m)
      (match m
@@ -53,7 +53,7 @@
        [(list 'Seize peer)
         (send peer 'Rejected)
         (goto GettingNumber lim analyzer number)]
-       [_ (goto GettingNumber lim analyzer number)]))
+       [* (goto GettingNumber lim analyzer number)]))
 
    (define-state (WaitOnAnalysis lim analyzer number) (m)
      (match m
@@ -70,7 +70,7 @@
        ['GetMoreDigits (goto GettingNumber lim analyzer number)]
        ;; Note: because we don't have selective receive, we throw away any numbers dialed while
        ;; waiting on the analysis. Ideally we would save them in some sort of stack instead
-       [_ (goto WaitOnAnalysis lim analyzer number)]))
+       [* (goto WaitOnAnalysis lim analyzer number)]))
 
    ;; Called "calling_B" in Ulf's version
    (define-state (MakeCallToB lim analyzer peer) (m)
@@ -85,7 +85,7 @@
        ['Rejected
         (send lim (list 'StartTone 'Busy))
         (goto WaitOnHook lim analyzer 'HaveTone)]
-       [_ (MakeCallToB lim analyzer peer)]))
+       [* (MakeCallToB lim analyzer peer)]))
 
    ;; the other phone is ringing
    (define-state (RingingASide lim analyzer peer) (m)
@@ -101,7 +101,7 @@
         (send peer 'Cleared)
         (send lim 'StopTone)
         (goto Idle lim analyzer)]
-       [_ (goto RingingASide lim analyzer peer)]))
+       [* (goto RingingASide lim analyzer peer)]))
 
    ;; this phone is ringing
    (define-state (RingingBSide lim analyzer peer) (m)
@@ -116,7 +116,7 @@
         (send lim 'StopRing)
         (send peer 'Answered)
         (goto Speech lim analyzer peer)]
-       [_ (goto RingingBSide lim analyzer peer)]))
+       [* (goto RingingBSide lim analyzer peer)]))
 
    (define-state (Speech lim analyzer peer) (m)
      (match m
@@ -128,7 +128,7 @@
         (send lim (list 'Disconnect peer))
         (send peer 'Cleared)
         (goto Idle lim analyzer)]
-       [_ (goto Speech lim analyzer peer)]))
+       [* (goto Speech lim analyzer peer)]))
 
    (define-state (WaitOnHook lim analyzer have-tone?) (m)
      (match m
@@ -141,4 +141,41 @@
            (send lim 'StopTone)
            (goto Idle lim analyzer)]
           ['NoTone (goto Idle lim analyzer)])]
-       [_ (goto WaitOnHook lim analyzer have-tone?)]))))
+       [* (goto WaitOnHook lim analyzer have-tone?)]))))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Specifications
+
+;; Specification from POV of another phone
+(spec
+ (goto Idle)
+
+ (define-state (Idle)
+   [(list 'Seize peer) ->
+    (with-outputs ([peer 'Seized])
+      (goto Ringing peer))]
+   [(list 'Seize peer) ->
+    (with-outputs ([peer 'Rejected])
+      (goto Idle))]
+   ['Cleared -> (goto Idle)])
+
+ (define-state (Ringing peer)
+   ; can hang up, can answer, can respond to a clear, can respond to seized
+   [unobs ->
+     (with-outputs ([peer 'Cleared])
+       (goto Idle))]
+   [unobs ->
+     (with-outputs ([peer 'Answered])
+       (goto InCall peer))]
+   [(list 'Seize other-peer) ->
+    (with-outputs ([other-peer 'Rejected])
+      (goto Ringing peer))]
+   ['Cleared -> (goto Idle)])
+
+ (define-state (InCall peer)
+   [unobs -> (with-outputs ([peer 'Answered]) (goto InCall peer))]
+   [unobs -> (with-outputs ([peer 'Cleared]) (goto InCall peer))]
+   [(list 'Seize other-peer) ->
+    (with-outputs ([other-peer 'Rejected])
+      (goto InCall peer))]
+   ['Cleared -> (goto Idle)]))
