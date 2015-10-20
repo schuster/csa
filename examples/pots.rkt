@@ -24,10 +24,10 @@
        ['OffHook
         (send lim (list 'StartTone 'Dial))
         (goto GettingFirstDigit lim analyzer)]
-       [(list 'Seize peer-chan)
-        (send peer-chan 'Seized)
+       [(list 'Seize peer)
+        (send peer 'Seized)
         (send lim 'StartRing)
-        (goto RingingBSide lim analyzer peer-chan)]
+        (goto RingingBSide lim analyzer peer)]
        [_ (goto Idle lim analyzer)]))
 
    (define-state (GettingFirstDigit lim analyzer) (m)
@@ -39,8 +39,8 @@
         (send lim 'StopTone)
         (send analyzer (list 'AnalysisRequest (list 'Cons n 'NoDigits) self))
         (goto WaitOnAnalysis lim analyzer (list 'Cons n 'NoDigits))]
-       [(list 'Seize peer-chan)
-        (send peer-chan 'Rejected)
+       [(list 'Seize peer)
+        (send peer 'Rejected)
         (goto GettingFirstDigit lim analyzer)]
        [_ (goto GettingFirstDigit lim analyzer)]))
 
@@ -50,23 +50,23 @@
        [(list 'Digit n)
         (send analyzer (list 'AnalysisRequest (list 'Cons n number) self))
         (goto WaitOnAnalysis lim analyzer (list 'Cons n number))]
-       [(list 'Seize peer-chan)
-        (send peer-chan 'Rejected)
+       [(list 'Seize peer)
+        (send peer 'Rejected)
         (goto GettingNumber lim analyzer number)]
        [_ (goto GettingNumber lim analyzer number)]))
 
    (define-state (WaitOnAnalysis lim analyzer number) (m)
      (match m
        ['OnHook (goto Idle lim analyzer)]
-       [(list 'Seize peer-chan)
-        (send peer-chan 'Rejected)
+       [(list 'Seize peer)
+        (send peer 'Rejected)
         (goto WaitOnAnalysis lim analyzer number)]
        ['Invalid
         (send lim (list 'StartTone 'Fault))
         (goto WaitOnHook lim analyzer 'HaveTone)]
-       [(list 'Valid peer-chan)
-        (send peer-chan (list 'Seize self))
-        (goto MakeCallToB lim analyzer peer-chan)]
+       [(list 'Valid peer)
+        (send peer (list 'Seize self))
+        (goto MakeCallToB lim analyzer peer)]
        ['GetMoreDigits (goto GettingNumber lim analyzer number)]
        ;; Note: because we don't have selective receive, we throw away any numbers dialed while
        ;; waiting on the analysis. Ideally we would save them in some sort of stack instead
@@ -87,6 +87,7 @@
         (goto WaitOnHook lim analyzer 'HaveTone)]
        [_ (MakeCallToB lim analyzer peer)]))
 
+   ;; the other phone is ringing
    (define-state (RingingASide lim analyzer peer) (m)
      (match m
        [(list 'Seize new-peer)
