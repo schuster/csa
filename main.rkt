@@ -167,7 +167,7 @@
   (define-syntax-class match-pattern
     #:literals (list quote match-wildcard)
     #:attributes (stx)
-    (pattern match-wildcard #:attr stx (syntax 'tmp))
+    (pattern match-wildcard #:attr stx (syntax tmp))
     (pattern x:id #:attr stx (syntax x))
     (pattern (quote s:id) #:attr stx (syntax (quote s)))
     (pattern (list p:match-pattern ...) #:attr stx (syntax (list p ...)))))
