@@ -160,10 +160,7 @@
    ['Cleared -> (goto Idle)])
 
  (define-state (Ringing peer)
-   ; can hang up, can answer, can respond to a clear, can respond to seized
-   [unobs ->
-     (with-outputs ([peer 'Cleared])
-       (goto Idle))]
+   ; can answer, can respond to a clear, can respond to seized
    [unobs ->
      (with-outputs ([peer 'Answered])
        (goto InCall peer))]
