@@ -9,7 +9,8 @@
          aps
          aps-eval
          subst-n/aps
-         subst/aps)
+         subst/aps
+         type-subst)
 
 ;; ---------------------------------------------------------------------------------------------------
 
@@ -41,7 +42,15 @@
      (list p ...))
   ((x s) variable-not-otherwise-mentioned)
   (t (quote variable-not-otherwise-mentioned))
-  (n natural))
+  (n natural)
+  (τ Nat
+     (minfixpt X τ)
+     X
+     t
+     (Tuple τ ...)
+     (Union τ ...)
+     (Addr τ)) ;; TODO: integrate types into the language
+  (X variable-not-otherwise-mentioned))
 
 (define-extended-language csa-eval
   csa
@@ -275,3 +284,24 @@
   [(subst/aps/po t x v-hat) t]
   [(subst/aps/po * x v-hat) *]
   [(subst/aps/po (list po ...) x v-hat) (list (subst/aps/po po x v-hat) ...)])
+
+;; ---------------------------------------------------------------------------------------------------
+;; Type system helpers
+
+(define-metafunction csa
+  type-subst : τ X τ -> τ
+  [(type-subst Nat _ _) Nat]
+  [(type-subst (μ X τ_1) X τ_2)
+   (μ X τ_1)]
+  ;; TODO: do the full renaming here
+  [(type-subst (μ X_1 τ_1) X_2 τ_2)
+   (μ X_1 (type-subst τ_1 X_2 τ_2))]
+  [(type-subst X X τ) τ]
+  [(type-subst X_1 X_2 τ) X_1]
+  [(type-subst t _ _) t]
+  [(type-subst (Tuple τ ...) X τ_2)
+   (Tuple (type-subst τ X τ_2) ...)]
+  [(type-subst (Union τ ...) X τ_2)
+   (Union (type-subst τ X τ_2) ...)]
+  [(type-subst (Addr τ) X τ_2)
+   (Addr (type-subst τ X τ_2))])
