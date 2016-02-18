@@ -173,8 +173,7 @@
    ['Cleared -> (goto Idle)])
 
  (define-state (InCall peer)
-   [unobs -> (with-outputs ([peer 'Answered]) (goto InCall peer))]
-   [unobs -> (with-outputs ([peer 'Cleared]) (goto InCall peer))]
+   [unobs -> (with-outputs ([peer 'Cleared]) (goto Idle))]
    [(list 'Seize other-peer) ->
     (with-outputs ([other-peer 'Rejected])
       (goto InCall peer))]
