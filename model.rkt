@@ -106,9 +106,9 @@
     ;; TODO: match
 
     with
-    [(--> (in-hole A (a ((S ...) (in-hole E e_old))))
-          (in-hole A (a ((S ...) (in-hole E e_new)))))
-     (==> e_old e_new)]))
+    [(--> (in-hole A (a ((S ...) (in-hole E old))))
+          (in-hole A (a ((S ...) (in-hole E new)))))
+     (==> old new)]))
 
 (module+ test
   (define empty-A-context (term ((hole) () () ())))
