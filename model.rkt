@@ -30,7 +30,7 @@
      (begin e ... e)
      (let ([x e] ...) e)
      (match e [p e] ...)
-     (list e ...)
+     (tuple e ...)
      t
      x
      n)
@@ -39,7 +39,7 @@
   (p *
      x
      t
-     (list p ...))
+     (tuple p ...))
   ((x s) variable-not-otherwise-mentioned)
   (t (quote variable-not-otherwise-mentioned))
   (n natural)
@@ -63,7 +63,7 @@
      a
      (rcv (x) e)
      (rcv (x) e [(timeout n) e]))
-  (v n t (list v ...) a)
+  (v n t (tuple v ...) a)
   (a (addr natural))
   (A ((any_1 ... hole any_2 ...) μ ρ χ))
   (E hole
@@ -73,7 +73,7 @@
      (begin E e ...)
      (let ([x E] [x e] ...) e)
      (match E [p e] ...)
-     (list v ... E e ...)))
+     (tuple v ... E e ...)))
 
 (define handler-step
   (reduction-relation csa-eval
@@ -156,7 +156,7 @@
    (let ([x_let (subst e x v)] ...) (subst e_body x v))]
   [(subst (match e [p e_pat] ...) x v)
    (match (subst e x v) (subst/match-clause [p e_pat] x v) ...)]
-  [(subst (list e ...) x v) (list (subst e x v) ...)]
+  [(subst (tuple e ...) x v) (tuple (subst e x v) ...)]
   [(subst (rcv (x) e) x v) (rcv (x) e)]
   [(subst (rcv (x_h) e) x v) (rcv (x_h) (subst e x v))]
   [(subst (rcv (x) e [(timeout n) e_timeout]) x v) (rcv (x) e [(timeout n) e_timeout])]
@@ -177,14 +177,14 @@
   [(pattern-binds-var x x) #t]
   [(pattern-binds-var x_1 x_2) #f]
   [(pattern-binds-var t x) #t]
-  [(pattern-binds-var (list p ...) x)
+  [(pattern-binds-var (tuple p ...) x)
    ,(ormap values (term ((pattern-binds-var p x) ...)))])
 
 (module+ test
-  (check-equal? (term (subst/match-clause [(list x y z) x] x 'foo))
-                (term [(list x y z) x]))
-  (check-equal? (term (subst/match-clause [(list a y z) x] x 'foo))
-                (term [(list a y z) 'foo])))
+  (check-equal? (term (subst/match-clause [(tuple x y z) x] x 'foo))
+                (term [(tuple x y z) x]))
+  (check-equal? (term (subst/match-clause [(tuple a y z) x] x 'foo))
+                (term [(tuple a y z) 'foo])))
 
 (define-metafunction csa-eval
   subst/S : S x v -> S
@@ -243,7 +243,7 @@
       x
       self
       t
-      (list po ...)))
+      (tuple po ...)))
 
 (define-extended-language aps-eval
   aps
@@ -283,7 +283,7 @@
   [(subst/aps/po a-hat x v-hat) a-hat]
   [(subst/aps/po t x v-hat) t]
   [(subst/aps/po * x v-hat) *]
-  [(subst/aps/po (list po ...) x v-hat) (list (subst/aps/po po x v-hat) ...)])
+  [(subst/aps/po (tuple po ...) x v-hat) (tuple (subst/aps/po po x v-hat) ...)])
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Type system helpers
