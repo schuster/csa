@@ -1,3 +1,6 @@
+IMPORTANT NOTE: This repository is frozen. All future work on CSA is being done
+in my separate APS checker repository (and the model was copied there)
+
 CSA: Communicating State Agents, and APS: Actor Protocol Specifications
 
 This is a package for Racket implementing the CSA state-machine-based actor
