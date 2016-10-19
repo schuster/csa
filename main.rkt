@@ -45,15 +45,20 @@
 
 (define-syntax (module-begin stx)
   (syntax-parse stx
-    #:literals (program receptionists externals actors)
-    [(_ (program (receptionists [recs:id _] ...)
-                 (externals [exts:id _] ...)
-                 (actors [actor-names actor-inits] ...)))
+    [(_ the-program)
      #`(#%module-begin
         (provide csa-program)
-        (define (csa-program exts ...)
-         (define actor-names actor-inits) ...
-         (values recs ...)))]))
+        (define csa-program the-program))]))
+
+(define-syntax (program stx)
+  (syntax-parse stx
+        #:literals (program receptionists externals actors)
+        [(_ (receptionists [recs:id _] ...)
+            (externals [exts:id _] ...)
+            (actors [actor-names actor-inits] ...))
+         #`(lambda (exts ...)
+             (define actor-names actor-inits) ...
+             (values recs ...))]))
 
 (begin-for-syntax
   (define-syntax-class state-definition
@@ -123,7 +128,7 @@
 
 (define-keywords (spawn-agent) define-state)
 (define-keywords define-state timeout)
-(define-keywords #%module-begin program receptionists externals actors)
+(define-keywords program receptionists externals actors)
 
 (define (send chan message)
   (async-channel-put chan message))
