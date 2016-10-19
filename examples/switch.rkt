@@ -1,36 +1,29 @@
-#lang csa
+#lang s-exp "../main.rkt"
+;;#lang csa
 
 ;; A simple forwarding agent that sends its input to the most recently assigned output address if in
 ;; the ON state, or discards the input if in the OFF state
 
-(provide Switch)
+(program
+ (receptionists [switch (Union (In Nat) (Toggle) (NewOut (Addr Nat)))])
+ (externals [out Nat])
+ (actors
+  [switch
+   (let ()
+     (spawn switch-spawn (Union (In Nat) (Toggle) (NewOut (Addr Nat)))
+       (goto On out)
 
-(define (Switch out)
-  (spawn
-   (goto On out)
-   (define-state (Off out) (e)
-     (match e
-       [(list 'In m) (goto Off out)]
-       ['Toggle (goto On out)]
-       [(list 'NewOut c) (goto Off c)]))
-   (define-state (On out) (e)
-     (match e
-       [(list 'In m)
-        (send out m)
-        (goto On out)]
-       ['Toggle (goto Off out)]
-       [(list 'NewOut c) (goto On c)]))))
+       (define-state (Off [out (Addr Nat)]) (e)
+         (case e
+           [(In m) (goto Off out)]
+           [(Toggle) (goto On out)]
+           [(NewOut c) (goto Off c)]))
 
-;; ---------------------------------------------------------------------------------------------------
-;; Specification
-
-(spec
- (goto Off initial-out)
- (define-state (Off current-out)
-   [(list 'In *) -> (goto On current-out)]
-   ['Toggle -> (goto On current-out)]
-   [(list 'NewOut c) -> (goto Off c)])
- (define-state (On current-out)
-   [(list 'In *) -> (with-outputs ([current-out *]) (goto On current-out))]
-   ['Toggle -> (goto Off current-out)]
-   [(list 'NewOut c) -> (goto On c)]))
+       (define-state (On [out (Addr Nat)]) (e)
+         (case e
+           [(In m)
+            (begin
+              (send out m)
+              (goto On out))]
+           [(Toggle) (goto Off out)]
+           [(NewOut c) (goto On c)]))))]))

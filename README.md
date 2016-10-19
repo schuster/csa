@@ -1,11 +1,10 @@
-IMPORTANT NOTE: This repository is frozen. All future work on CSA is being done
-in my separate APS checker repository (and the model was copied there)
+IMPORTANT NOTE: This repository is currently in the midst of being updated for a
+new version of the language, so much of it is in a broken state
 
-CSA: Communicating State Agents, and APS: Actor Protocol Specifications
+CSA: Communicating State Agents
 
-This is a package for Racket implementing the CSA state-machine-based actor
-language as well as a simple syntax checker for APS, the corresponding
-specification language.
+This is a package for executing the CSA state-machine-based actor language as a
+Racket program. The related conformance checker is in another repository.
 
 Installation
 ============

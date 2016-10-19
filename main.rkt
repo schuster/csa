@@ -1,18 +1,19 @@
 #lang racket
 
 (provide
- #%module-begin
+ (rename-out [module-begin #%module-begin])
  #%datum
  #%app
  #%top
- provide
- define ; only used to provide a constructor for tests
+ program
+ receptionists
+ externals
+ actors
  quote
  list
  begin
  let
- (rename-out [csa-match match])
- (rename-out [match-wildcard *])
+ (rename-out [csa-case case])
  +
  (rename-out [csa- -])
  (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
@@ -23,16 +24,12 @@
  timeout
  send
  spawn
- spawn-named-agent
  goto
  goto-this-state
  define-actor
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
-
- ;; specifications
- spec
 
  ;; for debugging only
  displayln
@@ -42,10 +39,21 @@
 ;; ---------------------------------------------------------------------------------------------------
 
 (require racket/async-channel
+         racket/stxparam
          (for-syntax syntax/parse
-                     racket/syntax
-                     redex/reduction-semantics
-                     "model.rkt"))
+                     racket/syntax))
+
+(define-syntax (module-begin stx)
+  (syntax-parse stx
+    #:literals (program receptionists externals actors)
+    [(_ (program (receptionists [recs:id _] ...)
+                 (externals [exts:id _] ...)
+                 (actors [actor-names actor-inits] ...)))
+     #`(#%module-begin
+        (provide csa-program)
+        (define (csa-program exts ...)
+         (define actor-names actor-inits) ...
+         (values recs ...)))]))
 
 (begin-for-syntax
   (define-syntax-class state-definition
@@ -54,7 +62,7 @@
     ;; run-time overhead of a function call, but I don't know enough about macros to figure that out
     ;; yet
     #:attributes (transition-func-generator)
-    (pattern (define-state (name:id formal:id ...) (message-var:id)
+    (pattern (define-state (name:id [formal:id _] ...) (message-var:id)
                body
                (~optional [(timeout timeout-amount:nat) timeout-body ...]))
              #:attr transition-func-generator
@@ -82,9 +90,7 @@
 
 (define-syntax (spawn stx)
   (syntax-parse stx
-    [(_ name:id args ...)
-     (syntax/loc stx (name args ...))]
-    [(_ init state-def:state-definition ...)
+    [(_ _ _ init state-def:state-definition ...)
      ;; TODO: figure out why we have to use #'init here instead of stx
      (with-syntax* ([self (datum->syntax #'init 'self)]
                     [(state-def-function ...)
@@ -97,11 +103,6 @@
                      (let ([transition-thunk init])
                        (transition-thunk))))
            self))]))
-
-(define-syntax (spawn-named-agent stx)
-  (syntax-parse stx
-    [(_ (agent:id arg ...))
-     #'(agent arg ...)]))
 
 ;; (define-keywords (func-name ...) keyword ...) defines each keyword as syntax that can only be used
 ;; in one of the given function names. Same for the case where (func-name ...) is replaced with
@@ -122,6 +123,7 @@
 
 (define-keywords (spawn-agent) define-state)
 (define-keywords define-state timeout)
+(define-keywords #%module-begin program receptionists externals actors)
 
 (define (send chan message)
   (async-channel-put chan message))
@@ -136,16 +138,6 @@
   (current-state-thunk))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Specifications
-
-(define-syntax (spec stx)
-  (syntax-parse stx
-    [(_ spec-contents ...)
-     (unless (redex-match aps ((goto s u ...) S-hat ...) (syntax->datum #'(spec-contents ...)))
-       (raise-syntax-error #f "Invalid syntax for specification" stx))
-     #'(void)]))
-
-;; ---------------------------------------------------------------------------------------------------
 ;; Natural number operations
 
 (define (csa= a b)
@@ -158,27 +150,18 @@
   (max 0 (- a b)))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Pattern matching
+;; Case
 
-(define-syntax (match-wildcard stx)
-  (raise-syntax-error #f "can only be used as a match pattern" stx))
-
-(begin-for-syntax
-  (define-syntax-class match-pattern
-    #:literals (list quote match-wildcard)
-    #:attributes (stx)
-    (pattern match-wildcard #:attr stx (syntax tmp))
-    (pattern x:id #:attr stx (syntax x))
-    (pattern (quote s:id) #:attr stx (syntax (quote s)))
-    (pattern (list p:match-pattern ...) #:attr stx (syntax (list p ...)))))
-
-(define-syntax (csa-match stx)
+(define-syntax (csa-case stx)
   (syntax-parse stx
-    [(_ e [pat:match-pattern body ...+] ...)
-     (with-syntax ([(new-pat ...) (attribute pat.stx)])
-       #`(match e
-           [new-pat body ...] ...
-           [_ (sync)]))])) ; A match without a matching clause is a stuck state
+    [(_ e [(label:id field:id ...) body] ...)
+     #`(let ([e-result e])
+         (match e-result
+           [(list 'variant 'label field ...) body] ...
+           [_ (error 'csa-case
+                     "No match for ~s, patterns were: ~s"
+                     e-result
+                     (list (quote (list 'variant 'label field ...)) ...))]))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conditionals
