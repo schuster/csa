@@ -1,5 +1,4 @@
-#lang s-exp "../main.rkt"
-;;#lang csa
+#lang csa
 
 ;; A simple forwarding agent that sends its input to the most recently assigned output address if in
 ;; the ON state, or discards the input if in the OFF state
