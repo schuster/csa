@@ -27,7 +27,11 @@
  goto
  goto-this-state
  define-actor
+ variant
  hash
+ (rename-out [my-hash-has-key? hash-has-key?]
+             [my-hash-ref hash-ref])
+ hash-set
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
@@ -146,10 +150,10 @@
 ;; Natural number operations
 
 (define (csa= a b)
-  (if (= a b) 'True 'False))
+  (if (= a b) (variant True) (variant False)))
 
 (define (csa< a b)
-  (if (< a b) 'True 'False))
+  (if (< a b) (variant True) (variant False)))
 
 (define (csa- a b)
   (max 0 (- a b)))
@@ -190,9 +194,22 @@
          (spawn init states ...)))]))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Hash tables
+;; Data types
 
 (define-syntax (hash stx)
   (syntax-parse stx
     [(_ [key val] ...)
      #`(make-immutable-hash (list (cons key val) ...))]))
+
+(define (my-hash-has-key? h k)
+  (if (hash-has-key? h k) (variant True) (variant False)))
+
+(define (my-hash-ref h k)
+  (match (hash-ref h k #f)
+    [#f (variant Nothing)]
+    [val (variant Just val)]))
+
+(define-syntax (variant stx)
+  (syntax-parse stx
+    [(_ tag fields ...)
+     #'(list 'variant 'tag fields ...)]))
