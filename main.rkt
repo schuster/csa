@@ -31,9 +31,6 @@
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
 
- ;; specifications
- spec
-
  ;; for debugging only
  displayln
  printf
@@ -134,16 +131,6 @@
 
 (define-syntax-rule (goto-this-state)
   (current-state-thunk))
-
-;; ---------------------------------------------------------------------------------------------------
-;; Specifications
-
-(define-syntax (spec stx)
-  (syntax-parse stx
-    [(_ spec-contents ...)
-     (unless (redex-match aps ((goto s u ...) S-hat ...) (syntax->datum #'(spec-contents ...)))
-       (raise-syntax-error #f "Invalid syntax for specification" stx))
-     #'(void)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Natural number operations
