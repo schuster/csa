@@ -27,6 +27,7 @@
  goto
  goto-this-state
  define-actor
+ hash
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
@@ -187,3 +188,11 @@
      (syntax/loc stx
        (define (actor-name args ...)
          (spawn init states ...)))]))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Hash tables
+
+(define-syntax (hash stx)
+  (syntax-parse stx
+    [(_ [key val] ...)
+     #`(make-immutable-hash (list (cons key val) ...))]))
