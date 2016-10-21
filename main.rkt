@@ -16,7 +16,9 @@
  (rename-out [csa-case case])
  +
  (rename-out [csa- -])
- (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
+ (contract-out (rename csa= = (-> (or/c natural-number/c string?)
+                                  (or/c natural-number/c string?)
+                                  any/c))
                (rename csa< < (-> natural-number/c natural-number/c any/c)))
  (rename-out [csa-cond cond])
  else
@@ -147,10 +149,19 @@
   (current-state-thunk))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Natural number operations
+;; Equality
 
 (define (csa= a b)
-  (if (= a b) (variant True) (variant False)))
+  (boolean->variant
+   (cond
+     [(and (string? a) (string? b)) (equal? a b)]
+     [(and (number? a) (number? b)) (= a b)])))
+
+(define (boolean->variant b)
+  (if b (variant True) (variant False) ))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Natural number operations
 
 (define (csa< a b)
   (if (< a b) (variant True) (variant False)))
