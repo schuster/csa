@@ -16,7 +16,9 @@
  (rename-out [csa-case case])
  +
  (rename-out [csa- -])
- (contract-out (rename csa= = (-> natural-number/c natural-number/c any/c))
+ (contract-out (rename csa= = (-> (or/c natural-number/c string?)
+                                  (or/c natural-number/c string?)
+                                  any/c))
                (rename csa< < (-> natural-number/c natural-number/c any/c)))
  (rename-out [csa-cond cond])
  else
@@ -27,6 +29,11 @@
  goto
  goto-this-state
  define-actor
+ variant
+ hash
+ (rename-out [my-hash-has-key? hash-has-key?]
+             [my-hash-ref hash-ref])
+ hash-set
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
@@ -52,13 +59,14 @@
 
 (define-syntax (program stx)
   (syntax-parse stx
-        #:literals (program receptionists externals actors)
-        [(_ (receptionists [recs:id _] ...)
-            (externals [exts:id _] ...)
-            (actors [actor-names actor-inits] ...))
-         #`(lambda (exts ...)
-             (define actor-names actor-inits) ...
-             (values recs ...))]))
+    #:literals (receptionists externals actors)
+    [(_ (receptionists [recs:id _] ...)
+        (externals [exts:id _] ...)
+        (actors [actor-names actor-inits] ...))
+     #`(lambda (exts ...)
+         (define actor-names actor-inits) ...
+         (values recs ...))]))
+
 
 (begin-for-syntax
   (define-syntax-class state-definition
@@ -143,13 +151,22 @@
   (current-state-thunk))
 
 ;; ---------------------------------------------------------------------------------------------------
-;; Natural number operations
+;; Equality
 
 (define (csa= a b)
-  (if (= a b) 'True 'False))
+  (boolean->variant
+   (cond
+     [(and (string? a) (string? b)) (equal? a b)]
+     [(and (number? a) (number? b)) (= a b)])))
+
+(define (boolean->variant b)
+  (if b (variant True) (variant False) ))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Natural number operations
 
 (define (csa< a b)
-  (if (< a b) 'True 'False))
+  (if (< a b) (variant True) (variant False)))
 
 (define (csa- a b)
   (max 0 (- a b)))
@@ -164,9 +181,9 @@
          (match e-result
            [(list 'variant 'label field ...) body] ...
            [_ (error 'csa-case
-                     "No match for ~s, patterns were: ~s"
+                     "No match for variant ~s; patterns were ~s"
                      e-result
-                     (list (quote (list 'variant 'label field ...)) ...))]))]))
+                     (list '(variant label field ...) ...))]))]))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Conditionals
@@ -188,3 +205,24 @@
      (syntax/loc stx
        (define (actor-name args ...)
          (spawn init states ...)))]))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Data types
+
+(define-syntax (hash stx)
+  (syntax-parse stx
+    [(_ [key val] ...)
+     #`(make-immutable-hash (list (cons key val) ...))]))
+
+(define (my-hash-has-key? h k)
+  (if (hash-has-key? h k) (variant True) (variant False)))
+
+(define (my-hash-ref h k)
+  (match (hash-ref h k #f)
+    [#f (variant Nothing)]
+    [val (variant Just val)]))
+
+(define-syntax (variant stx)
+  (syntax-parse stx
+    [(_ tag fields ...)
+     #'(list 'variant 'tag fields ...)]))
