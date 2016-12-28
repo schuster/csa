@@ -1,5 +1,7 @@
 #lang csa
 
+;; DEPRECATED; see the example in the aps-conformance-checker project, instead
+
 ;; An implementation of the POTS system often used as an Erlang tutorial, found here:
 ;; https://github.com/uwiger/pots
 
