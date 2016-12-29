@@ -93,7 +93,7 @@
     #:attributes (transition-func-generator)
     (pattern (define-state (name:id [formal:id _] ...) (message-var:id)
                body
-               (~optional [(timeout timeout-amount:nat) timeout-body ...]))
+               (~optional [(timeout timeout-amount) timeout-body ...]))
              #:attr transition-func-generator
              (lambda (chan)
                (with-syntax ([chan chan])
@@ -106,7 +106,7 @@
                      (define timeout-event
                        #,(if (not (attribute timeout-amount))
                              #`never-evt
-                             #`(handle-evt (alarm-evt (+ (current-inexact-milliseconds) (* 1000 timeout-amount)))
+                             #`(handle-evt (alarm-evt (+ (current-inexact-milliseconds) timeout-amount))
                                            (lambda (x)
                                              (define transition-thunk (begin timeout-body ...))
                                              (transition-thunk)))))
