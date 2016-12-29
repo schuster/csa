@@ -41,6 +41,7 @@
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref])
  hash-set
+ hash-remove
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
