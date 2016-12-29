@@ -22,5 +22,5 @@
 (define-match-expander csa-variant
   (lambda (stx)
     (syntax-parse stx
-      [(_ tag:id vals ...)
-       #`(quote (variant tag (unquote vals) ...))])))
+      [(_ tag:id val-patterns ...)
+       #`(list 'variant 'tag val-patterns ...)])))
