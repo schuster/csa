@@ -16,6 +16,9 @@
  (rename-out [csa-case case])
  +
  (rename-out [csa- -])
+ *
+ /
+ arithmetic-shift
  (contract-out (rename csa= = (-> (or/c natural-number/c string?)
                                   (or/c natural-number/c string?)
                                   any/c))
@@ -30,6 +33,10 @@
  goto-this-state
  define-actor
  variant
+ record
+ :
+ list
+ vector
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref])
@@ -37,6 +44,15 @@
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
+ random
+ cons
+ list-ref
+ length
+ vector-length
+ vector-ref
+ vector-take
+ vector-copy
+ vector-append
 
  ;; for debugging only
  displayln
@@ -226,3 +242,13 @@
   (syntax-parse stx
     [(_ tag fields ...)
      #'(list 'variant 'tag fields ...)]))
+
+(define-syntax (record stx)
+  (syntax-parse stx
+    [(_ [field-label:id field-val] ...)
+     #`(make-immutable-hash (list (cons 'field-label field-val) ...))]))
+
+(define-syntax (: stx)
+  (syntax-parse stx
+    [(_ rec field:id)
+     #`(hash-ref rec 'field)]))
