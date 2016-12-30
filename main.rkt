@@ -22,8 +22,15 @@
  (contract-out (rename csa= = (-> (or/c natural-number/c string?)
                                   (or/c natural-number/c string?)
                                   any/c))
-               (rename csa< < (-> natural-number/c natural-number/c any/c)))
+               (rename csa<  <  (-> natural-number/c natural-number/c any/c))
+               (rename csa<= <= (-> natural-number/c natural-number/c any/c))
+               (rename csa>  >  (-> natural-number/c natural-number/c any/c))
+               (rename csa>= >= (-> natural-number/c natural-number/c any/c)))
+ (rename-out [csa-and and])
+ (rename-out [csa-or or])
+ (rename-out [csa-not not])
  (rename-out [csa-cond cond])
+ (rename-out [csa-if if])
  else
  define-state
  timeout
@@ -55,6 +62,9 @@
  vector-drop
  vector-copy
  vector-append
+
+ ;; loops
+ for/fold
 
  ;; for debugging only
  displayln
@@ -183,11 +193,35 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Natural number operations
 
-(define (csa< a b)
-  (if (< a b) (variant True) (variant False)))
+(match-define (list csa< csa<= csa> csa>=)
+  (for/list ([op (list < <= > >=)])
+    (lambda (a b)
+      (if (op a b) (variant True) (variant False)))))
 
 (define (csa- a b)
   (max 0 (- a b)))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Boolean operators
+
+(define (csa-true? a) (equal? a (variant True)))
+
+(define (csa-and a b)
+  (define a? (csa-true? a))
+  (define b? (csa-true? b))
+  (if (and a? b?)
+      (variant True)
+      (variant False)))
+
+(define (csa-or a b)
+  (define a? (csa-true? a))
+  (define b? (csa-true? b))
+  (if (or a? b?)
+      (variant True)
+      (variant False)))
+
+(define (csa-not a)
+  (if (csa-true? a) (variant False) (variant True)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Case
@@ -212,6 +246,13 @@
      #`(cond
         [test result1 ...] ...
         [else result2 ...])]))
+
+(define-syntax (csa-if stx)
+  (syntax-parse stx
+    [(_ test then else)
+     #'(if (csa-true? test)
+           then
+           else)]))
 
 ;; ---------------------------------------------------------------------------------------------------
 
