@@ -16,7 +16,7 @@
  (rename-out [csa-case case])
  +
  (rename-out [csa- -])
- *
+ (rename-out [* mult])
  /
  arithmetic-shift
  (contract-out (rename csa= = (-> (or/c natural-number/c string?)
