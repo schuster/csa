@@ -49,6 +49,7 @@
              [my-hash-ref hash-ref])
  hash-set
  hash-remove
+ hash-empty?
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
