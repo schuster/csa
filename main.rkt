@@ -47,6 +47,8 @@
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref])
+ hash-keys
+ hash-values
  hash-set
  hash-remove
  hash-empty?
