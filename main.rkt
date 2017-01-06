@@ -46,12 +46,12 @@
  vector
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
-             [my-hash-ref hash-ref])
+             [my-hash-ref hash-ref]
+             [my-hash-empty? hash-empty?])
  hash-keys
  hash-values
  hash-set
  hash-remove
- hash-empty?
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
@@ -278,6 +278,9 @@
 
 (define (my-hash-has-key? h k)
   (if (hash-has-key? h k) (variant True) (variant False)))
+
+(define (my-hash-empty? h)
+  (if (hash-empty? h) (variant True) (variant False)))
 
 (define (my-hash-ref h k)
   (match (hash-ref h k #f)
