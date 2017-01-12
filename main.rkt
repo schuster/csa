@@ -47,7 +47,8 @@
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref]
-             [my-hash-empty? hash-empty?])
+             [my-hash-empty? hash-empty?]
+             [my-empty? empty?])
  hash-keys
  hash-values
  hash-set
@@ -270,6 +271,9 @@
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Data types
+
+(define (my-empty? l)
+  (if (empty? l) (variant True) (variant False)))
 
 (define-syntax (hash stx)
   (syntax-parse stx
