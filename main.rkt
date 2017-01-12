@@ -47,8 +47,7 @@
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref]
-             [my-hash-empty? hash-empty?]
-             [my-empty? empty?])
+             [my-hash-empty? hash-empty?])
  hash-keys
  hash-values
  hash-set
@@ -58,6 +57,7 @@
  (rename-out [string-length byte-length])
  random
  cons
+ list-as-variant
  list-ref
  length
  vector-length
@@ -272,8 +272,8 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; Data types
 
-(define (my-empty? l)
-  (if (empty? l) (variant True) (variant False)))
+(define (list-as-variant l)
+  (if (empty? l) (variant Empty) (variant Cons (car l) (cdr l))))
 
 (define-syntax (hash stx)
   (syntax-parse stx
