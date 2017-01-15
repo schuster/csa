@@ -19,9 +19,7 @@
  (rename-out [* mult])
  /
  arithmetic-shift
- (contract-out (rename csa= = (-> (or/c natural-number/c string?)
-                                  (or/c natural-number/c string?)
-                                  any/c))
+ (contract-out (rename csa= =)
                (rename csa<  <  (-> natural-number/c natural-number/c any/c))
                (rename csa<= <= (-> natural-number/c natural-number/c any/c))
                (rename csa>  >  (-> natural-number/c natural-number/c any/c))
@@ -186,10 +184,7 @@
 ;; Equality
 
 (define (csa= a b)
-  (boolean->variant
-   (cond
-     [(and (string? a) (string? b)) (equal? a b)]
-     [(and (number? a) (number? b)) (= a b)])))
+  (boolean->variant (equal? a b)))
 
 (define (boolean->variant b)
   (if b (variant True) (variant False) ))
