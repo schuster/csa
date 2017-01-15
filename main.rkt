@@ -19,7 +19,7 @@
  (rename-out [* mult])
  /
  arithmetic-shift
- (rename [csa= =])
+ (rename-out [csa= =])
  (contract-out (rename csa<  <  (-> natural-number/c natural-number/c any/c))
                (rename csa<= <= (-> natural-number/c natural-number/c any/c))
                (rename csa>  >  (-> natural-number/c natural-number/c any/c))
