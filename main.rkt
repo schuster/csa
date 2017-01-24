@@ -57,6 +57,7 @@
  cons
  list-as-variant
  list-ref
+ remove
  length
  vector-length
  vector-ref
