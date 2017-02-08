@@ -40,6 +40,7 @@
  variant
  record
  :
+ coerce
  list
  vector
  hash
@@ -301,3 +302,10 @@
   (syntax-parse stx
     [(_ rec field:id)
      #`(hash-ref rec 'field)]))
+
+;; ---------------------------------------------------------------------------------------------------
+;; Types
+
+(define-syntax (coerce stx)
+  (syntax-parse stx
+    [(_ exp _) #'exp]))
