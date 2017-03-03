@@ -42,6 +42,7 @@
  :
  coerce
  fold
+ unfold
  list
  vector
  hash
@@ -312,5 +313,9 @@
     [(_ exp _) #'exp]))
 
 (define-syntax (fold stx)
+  (syntax-parse stx
+    [(_ _ exp) #`exp]))
+
+(define-syntax (unfold stx)
   (syntax-parse stx
     [(_ _ exp) #`exp]))
