@@ -41,6 +41,7 @@
  record
  :
  coerce
+ fold
  list
  vector
  hash
@@ -309,3 +310,7 @@
 (define-syntax (coerce stx)
   (syntax-parse stx
     [(_ exp _) #'exp]))
+
+(define-syntax (fold stx)
+  (syntax-parse stx
+    [(_ _ exp) #`exp]))
