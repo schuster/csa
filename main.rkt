@@ -44,7 +44,6 @@
  fold
  unfold
  list
- vector
  hash
  (rename-out [my-hash-has-key? hash-has-key?]
              [my-hash-ref hash-ref]
@@ -60,14 +59,12 @@
  cons
  list-as-variant
  list-ref
+ take
+ drop
+ list-copy
+ append
  remove
  length
- vector-length
- vector-ref
- vector-take
- vector-drop
- vector-copy
- vector-append
 
  ;; loops
  for/fold
@@ -273,6 +270,15 @@
 
 (define (list-as-variant l)
   (if (empty? l) (variant Empty) (variant Cons (car l) (cdr l))))
+
+(define (list-copy l start end)
+  (drop (take l end) start))
+
+(module+ test
+  (require rackunit)
+  (test-equal? "list-copy"
+    (list-copy (list 'a 'b 'c 'd 'e) 2 4)
+    (list 'c 'd)))
 
 (define-syntax (hash stx)
   (syntax-parse stx
