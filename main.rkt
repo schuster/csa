@@ -93,10 +93,10 @@
     #:literals (receptionists externals actors)
     [(_ (receptionists [recs:id _] ...)
         (externals [exts:id _] ...)
-        (actors [actor-names actor-inits] ...))
+        (let-actors ([actor-names actor-inits] ...) rec-actors ...))
      #`(lambda (exts ...)
          (define actor-names actor-inits) ...
-         (values recs ...))]))
+         (values rec-actors ...))]))
 
 
 (begin-for-syntax
