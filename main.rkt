@@ -185,7 +185,11 @@
 ;; Equality
 
 (define (csa= a b)
-  (boolean->variant (equal? a b)))
+  ;; NOTE: should really check whether a or b *contains* an address, but this is good enough to
+  ;; prevent the uses of address comparison I had in Raft
+  (if (or (async-channel? a) (async-channel? b))
+      (error 'csa= "Cannot compare addresses for equality. Given: ~s, ~s" a b)
+      (boolean->variant (equal? a b))))
 
 (define (boolean->variant b)
   (if b (variant True) (variant False) ))
