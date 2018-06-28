@@ -17,7 +17,7 @@
  +
  (rename-out [csa- -])
  (rename-out [* mult])
- /
+ (rename-out [csa/ /])
  arithmetic-shift
  (rename-out [csa= =])
  (contract-out (rename csa<  <  (-> natural-number/c natural-number/c any/c))
@@ -200,6 +200,9 @@
 
 (define (csa- a b)
   (max 0 (- a b)))
+
+(define (csa/ a b)
+  (floor (/ a b)))
 
 ;; ---------------------------------------------------------------------------------------------------
 ;; Boolean operators
