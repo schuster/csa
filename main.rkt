@@ -106,7 +106,7 @@
     ;; run-time overhead of a function call, but I don't know enough about macros to figure that out
     ;; yet
     #:attributes (transition-func-generator)
-    (pattern (define-state (name:id [formal:id _] ...) (message-var:id)
+    (pattern (define-state (name:id [formal:id _] ...) message-var:id
                body
                (~optional [(timeout timeout-amount) timeout-body ...]))
              #:attr transition-func-generator
