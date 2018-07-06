@@ -44,14 +44,14 @@
  fold
  unfold
  list
- hash
- (rename-out [my-hash-has-key? hash-has-key?]
-             [my-hash-ref hash-ref]
-             [my-hash-empty? hash-empty?])
- hash-keys
- hash-values
- hash-set
- hash-remove
+ dict
+ dict-has-key?
+ dict-ref
+ dict-empty?
+ (rename-out [hash-keys dict-keys]
+             [hash-values dict-values]
+             [hash-set dict-set]
+             [hash-remove dict-remove])
 
  ;; basic operations, for examples
  (rename-out [string-length byte-length])
@@ -287,18 +287,18 @@
     (list-copy (list 'a 'b 'c 'd 'e) 2 4)
     (list 'c 'd)))
 
-(define-syntax (hash stx)
+(define-syntax (dict stx)
   (syntax-parse stx
     [(_ [key val] ...)
      #`(make-immutable-hash (list (cons key val) ...))]))
 
-(define (my-hash-has-key? h k)
+(define (dict-has-key? h k)
   (if (hash-has-key? h k) (variant True) (variant False)))
 
-(define (my-hash-empty? h)
+(define (dict-empty? h)
   (if (hash-empty? h) (variant True) (variant False)))
 
-(define (my-hash-ref h k)
+(define (dict-ref h k)
   (match (hash-ref h k #f)
     [#f (variant Nothing)]
     [val (variant Just val)]))
